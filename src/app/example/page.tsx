@@ -1,8 +1,8 @@
 "use client";
 import React, { useState } from "react";
-import KeywordExtractor3, { extractKeywords as extract3 } from "@/processes/3KeyWordExtractor";
-import KeywordExtractor4, { extractKeywords as extract4 } from "@/processes/4KeyWordsExtractor";
-import MetaTagSearch, { metaTagSearch } from "@/processes/MetaTagSearch";
+import { extractKeywords as extract3 } from "@/processes/3KeyWordExtractor";
+import { extractKeywords as extract4 } from "@/processes/4KeyWordsExtractor";
+import { metaTagSearch } from "@/processes/MetaTagSearch";
 
 const modelOptions = [
   { label: "gpt-4.1-nano", value: "gpt-4.1-nano" },
@@ -15,9 +15,11 @@ const processOptions = [
   { label: "Meta Tag Search", value: "meta" },
 ];
 
+type ModelType = 'gpt-4.1' | 'gpt-4.1-nano';
+
 export default function ExamplePage() {
   const [input, setInput] = useState("");
-  const [model, setModel] = useState("gpt-4.1");
+  const [model, setModel] = useState<ModelType>("gpt-4.1");
   const [process, setProcess] = useState("3");
   const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,15 +32,14 @@ export default function ExamplePage() {
     try {
       let result: string[] | string = [];
       if (process === "3") {
-        result = await extract3(input, model as any);
+        result = await extract3(input, model);
         setOutput((result as string[]).join("\n"));
       } else if (process === "4") {
-        result = await extract4(input, model as any);
+        result = await extract4(input, model);
         setOutput((result as string[]).join("\n"));
       } else if (process === "meta") {
-        // Split input into non-empty lines for MetaTagSearch
         const inputLines = input.split("\n").map(line => line.trim()).filter(line => line.length > 0);
-        result = await metaTagSearch(inputLines, model as any);
+        result = await metaTagSearch(inputLines, model);
         setOutput(result as string);
       }
     } catch (err) {
@@ -66,7 +67,7 @@ export default function ExamplePage() {
           <label className="block mb-1 font-medium">Model</label>
           <select
             value={model}
-            onChange={e => setModel(e.target.value)}
+            onChange={e => setModel(e.target.value as ModelType)}
             className="border rounded p-2"
           >
             {modelOptions.map(opt => (
