@@ -25,10 +25,10 @@ export const metaTagSearch = async (
 ): Promise<string> => {
   try {
     // Read the instruction file as text from public
-    const instructionContent = await fetch('/instructions/Metatagsearch.txt').then(res => res.text());
+    const instructionContent = await fetch(`/instructions/Metatagsearch.txt?t=${Date.now()}`).then(res => res.text());
 
     // Prepare the prompt for messages (plain text only)
-    const prompt = `***IMPORTANT: For each input line, you MUST output the result strictly in the following format, and nothing else. Do not add or remove any sections. Do not perform keyword extraction.***\n\nFORMAT:\n\n🎬 Line:\n"Exact script line here."\n\n💡 Keywords:\n3-Keyword: ["...", "...", "..."]  \n4-Keyword: ["...", "...", "...", "..."]  \nMeta Tags: ["...", "..."]  \nTitle Tags: ["..."] or []\n\n📌 B-roll: Show / Suppress / Replace with Title\n\n🧠 Reason:\nShort, precise explanation based on emotional tone, visual clarity, speaker delivery, or story moment.\n\n🚫 Flags Triggered (if any):\n- useless_visual\n- speaker_focus\n- literal_demo\n- sensitive\n- precaution_required\n- title_overlay\n\n🎨 Creative Exception:\n(Optional) If an AI-generated, stylized, or animated visual would elevate the emotional clarity or storytelling, describe it briefly.\n\n🎯 Override Strength: [low / medium / high]\n\nINSTRUCTION:\n${instructionContent}\n\nINPUT LINES:\n${inputLines.map(line => `"${line}"`).join('\n')}`;
+    const prompt = `***IMPORTANT: For each input line, you MUST output the result strictly in the following format, and nothing else. Do not add or remove any sections. Do not perform keyword extraction. Add serial numbers starting from 1 for each input line.***\n\nFORMAT:\n\n🎬 Line 1:\n"Exact script line here."\n\n💡 Keywords:\n3-Keyword: ["...", "...", "..."]  \n4-Keyword: ["...", "...", "...", "..."]  \nMeta Tags: ["...", "..."]  \nTitle Tags: ["..."] or []\n\n📌 B-roll: Show / Suppress / Replace with Title\n\n🧠 Reason:\nShort, precise explanation based on emotional tone, visual clarity, speaker delivery, or story moment.\n\n🚫 Flags Triggered (if any):\n- useless_visual\n- speaker_focus\n- literal_demo\n- sensitive\n- precaution_required\n- title_overlay\n\n🎨 Creative Exception:\n(Optional) If an AI-generated, stylized, or animated visual would elevate the emotional clarity or storytelling, describe it briefly.\n\n🎯 Override Strength: [low / medium / high]\n\nINSTRUCTION:\n${instructionContent}\n\nINPUT LINES:\n${inputLines.map((line, index) => `${index + 1}. "${line}"`).join('\n')}`;
 
     // Prepare FormData
     const formData = new FormData();
@@ -42,14 +42,18 @@ export const metaTagSearch = async (
     const response = await axios.post<MetaTagSearchResponse>(
       'https://dev.felidae.network/api/chatgpt/chat_completion',
       formData,
-      { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 60000 }
+      { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120000 }
     );
 
     // Extract the content
     const content = response.data.data.choices[0].message.content;
 
     // Validation: check if all input lines are present in the output
-    const valid = inputLines.every(line => content.includes(line));
+    const valid = inputLines.every((line, index) => {
+      // Create the expected format with number prefix
+      const numberedLine = `${index + 1}. "${line}"`;
+      return content.includes(numberedLine);
+    });
     if (!valid && retryCount < 3) {
       return await metaTagSearch(inputLines, model, retryCount + 1);
     }

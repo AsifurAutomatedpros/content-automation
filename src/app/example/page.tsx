@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import { extractKeywords as extract3 } from "@/processes/3KeyWordExtractor";
 import { extractKeywords as extract4 } from "@/processes/4KeyWordsExtractor";
 import { metaTagSearch } from "@/processes/MetaTagSearch";
+import { processData as process44 } from "@/processes/44";
+import { processData as process819931 } from "@/processes/Sometimes";
 
 const modelOptions = [
   { label: "gpt-4.1-nano", value: "gpt-4.1-nano" },
@@ -13,6 +15,8 @@ const processOptions = [
   { label: "3 Keyword Extractor", value: "3" },
   { label: "4 Keyword Extractor", value: "4" },
   { label: "Meta Tag Search", value: "meta" },
+  { label: "44 Process", value: "44" },
+  { label: "sometimes", value: "819931" },
 ];
 
 type ModelType = 'gpt-4.1' | 'gpt-4.1-nano';
@@ -32,15 +36,21 @@ export default function ExamplePage() {
     try {
       let result: string[] | string = [];
       if (process === "3") {
-        result = await extract3(input, model);
+        result = await extract3(input.split('\n'), model);
         setOutput((result as string[]).join("\n"));
       } else if (process === "4") {
-        result = await extract4(input, model);
+        result = await extract4(input.split('\n'), model);
         setOutput((result as string[]).join("\n"));
       } else if (process === "meta") {
         const inputLines = input.split("\n").map(line => line.trim()).filter(line => line.length > 0);
         result = await metaTagSearch(inputLines, model);
         setOutput(result as string);
+      } else if (process === "44") {
+        result = await process44(input.split('\n'), model);
+        setOutput((result as string[]).join("\n"));
+      } else if (process === "819931") {
+        result = await process819931(input.split('\n'), model);
+        setOutput((result as string[]).join("\n"));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -50,25 +60,24 @@ export default function ExamplePage() {
   };
 
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto", padding: 32 }}>
-      <h1 className="text-xl font-bold mb-4">Keyword Extractor Example</h1>
-      <div className="mb-4 w-full">
-        <label className="block mb-1 font-medium">Input Text</label>
+    <div className="container mx-auto p-8 max-w-4xl">
+      <h1 className="text-2xl font-bold mb-6">Keyword Extractor Example</h1>
+      <div className="mb-6">
+        <label className="block text-sm font-medium mb-2">Input Text</label>
         <textarea
           value={input}
           onChange={e => setInput(e.target.value)}
-          style={{ width: "100%", maxWidth: 900, minHeight: 300 }}
-          className="border rounded p-2 "
+          className="w-full h-64 p-3 border rounded-lg"
           placeholder="Enter your text here..."
         />
       </div>
-      <div className="mb-4 flex gap-4">
+      <div className="flex gap-4 mb-6">
         <div>
-          <label className="block mb-1 font-medium">Model</label>
+          <label className="block text-sm font-medium mb-2">Model</label>
           <select
             value={model}
             onChange={e => setModel(e.target.value as ModelType)}
-            className="border rounded p-2"
+            className="p-2 border rounded-lg bg-white text-black"
           >
             {modelOptions.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -76,11 +85,11 @@ export default function ExamplePage() {
           </select>
         </div>
         <div>
-          <label className="block mb-1 font-medium">Process</label>
+          <label className="block text-sm font-medium mb-2">Process</label>
           <select
             value={process}
             onChange={e => setProcess(e.target.value)}
-            className="border rounded p-2"
+            className="p-2 border rounded-lg bg-white text-black"
           >
             {processOptions.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -90,19 +99,18 @@ export default function ExamplePage() {
       </div>
       <button
         onClick={handleProcess}
-        className="bg-blue-600 text-black px-4 py-2 rounded disabled:opacity-50"
+        className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
         disabled={loading || !input.trim()}
       >
         {loading ? "Processing..." : "Submit"}
       </button>
-      {error && <div className="text-red-600 mt-2">{error}</div>}
+      {error && <div className="mt-4 text-red-600">{error}</div>}
       <div className="mt-6">
-        <label className="block mb-1 font-medium">Output</label>
+        <label className="block text-sm font-medium mb-2">Output</label>
         <textarea
           value={output}
           readOnly
-          style={{ width: "100%", maxWidth: 900, minHeight: 300 }}
-          className="border rounded p-2 bg-black text-balck"
+          className="w-full h-64 p-3 border rounded-lg bg-gray-50"
         />
       </div>
     </div>

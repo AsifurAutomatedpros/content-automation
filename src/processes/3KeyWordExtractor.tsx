@@ -19,19 +19,20 @@ interface KeywordExtractorProps {
 }
 
 export const extractKeywords = async (
-  inputText: string,
+  inputLines: string[],
   model: 'gpt-4.1' | 'gpt-4.1-nano' = 'gpt-4.1',
   retryCount = 0
 ): Promise<string[]> => {
   try {
+    const inputText = inputLines.join('\n');
     // Read all required files as text from public
-    const bRollKeywordEngineContent = await fetch('/knowledgebase/3KeyWordExtractor/B-Roll Keyword Engine.txt').then(res => res.text());
-    const languageSafetyContent = await fetch('/knowledgebase/3KeyWordExtractor/Language Safety & Cinematic Reasoning.txt').then(res => res.text());
-    const subjectSelectionContent = await fetch('/knowledgebase/3KeyWordExtractor/Subject Selection by Age & Specificity.txt').then(res => res.text());
-    const schemaToolContent = await fetch('/instructions/3keywordExtractor.txt').then(res => res.text());
+    const bRollKeywordEngineContent = await fetch(`/knowledgebase/3KeyWordExtractor/B-Roll Keyword Engine.txt?t=${Date.now()}`).then(res => res.text());
+    const languageSafetyContent = await fetch(`/knowledgebase/3KeyWordExtractor/Language Safety & Cinematic Reasoning.txt?t=${Date.now()}`).then(res => res.text());
+    const subjectSelectionContent = await fetch(`/knowledgebase/3KeyWordExtractor/Subject Selection by Age & Specificity.txt?t=${Date.now()}`).then(res => res.text());
+    const schemaToolContent = await fetch(`/instructions/3keywordExtractor.txt?t=${Date.now()}`).then(res => res.text());
 
     // Prepare the prompt for messages (plain text only)
-    const prompt = `***IMPORTANT: For each phrase in the input, you MUST output exactly 3 keywords (no more, no less) for each phrase, and nothing else.***\n\nFollow these instructions strictly:\n1. Read the knowledge base.\n2. Read the schema-tool.\n3. Check the input prompt.\n4. Prepare the output.\n5. Validate the output.\n6. If any issue is found, send for recheck with output format.\n\nValidation: For each phrase, output exactly 3 keywords, no other content, just  list of three keywords per phrase as per the knowledge base and schema tool so there will be many three keywords as there are many phrases in the input.\n\nKnowledge Base:\n${bRollKeywordEngineContent}\n\nSchema Tool:\n${schemaToolContent}\n\n${languageSafetyContent}\n\n${subjectSelectionContent}\n\nInput:\n${inputText}`;
+    const prompt = `***IMPORTANT: For each phrase in the input, you MUST output exactly 3 keywords (no more, no less) for each phrase add serial number like 1,2,3 for each set of 3 keywords, and nothing else.***\n\nFollow these instructions strictly:\n1. Read the knowledge base.\n2. Read the schema-tool.\n3. Check the input prompt.\n4. Prepare the output.\n5. Validate the output.\n6. If any issue is found, send for recheck with output format.\n\nValidation: For each phrase, output exactly 3 keywords, no other content, just  list of three keywords per phrase as per the knowledge base and schema tool so there will be many three keywords as there are many phrases in the input.\n\nKnowledge Base:\n${bRollKeywordEngineContent}\n\nSchema Tool:\n${schemaToolContent}\n\n${languageSafetyContent}\n\n${subjectSelectionContent}\n\nInput:\n${inputText}`;
 
     // Prepare FormData
     const formData = new FormData();
@@ -54,12 +55,12 @@ export const extractKeywords = async (
     const keywords = content
       .split('\n')
       .map(line => line.trim())
-      .filter(line => line.split(' ').length === 3);
+      .filter(line => line.length > 0);
 
     // Validation: number of output lines must match number of input lines
-    const inputLines = inputText.split('\n').filter(line => line.trim().length > 0);
-    if ((keywords.length < inputLines.length) && retryCount < 3) {
-      return await extractKeywords(inputText, model, retryCount + 1);
+    const filteredInputLines = inputLines.filter((line: string) => line.trim().length > 0);
+    if ((keywords.length < filteredInputLines.length) && retryCount < 3) {
+      return await extractKeywords(filteredInputLines, model, retryCount + 1);
     }
 
     return keywords;
@@ -86,7 +87,7 @@ export const KeywordExtractor: React.FC<KeywordExtractorProps> = ({
       setError(null);
       
       try {
-        const result = await extractKeywords(inputText, model);
+        const result = await extractKeywords(inputText.split('\n'), model);
         setKeywords(result);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
