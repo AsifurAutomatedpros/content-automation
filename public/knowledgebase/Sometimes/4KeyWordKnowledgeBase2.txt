@@ -14,7 +14,7 @@ Automatically apply filmic language logic by evaluating:
 Before generating any keyword phrase:
 1.	Ask yourself internally: What would a director choose to show this moment visually?
 
-2.	Match visuals to Function Type, Contextual Meaning, and Compatible Pairings
+2.	Match visuals to Function Type, Contextual Meaning, and Compatible Pairingsasdasdasd
 
 3.	Reject visuals that clash in tone, are redundant, or lack cinematic logic
 
