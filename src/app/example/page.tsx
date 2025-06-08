@@ -3,8 +3,7 @@ import React, { useState } from "react";
 import { extractKeywords as extract3 } from "@/processes/3KeyWordExtractor";
 import { extractKeywords as extract4 } from "@/processes/4KeyWordsExtractor";
 import { metaTagSearch } from "@/processes/MetaTagSearch";
-import { processData as process44 } from "@/processes/44";
-import { processData as process819931 } from "@/processes/Sometimes";
+
 
 const modelOptions = [
   { label: "gpt-4.1-nano", value: "gpt-4.1-nano" },
@@ -45,13 +44,7 @@ export default function ExamplePage() {
         const inputLines = input.split("\n").map(line => line.trim()).filter(line => line.length > 0);
         result = await metaTagSearch(inputLines, model);
         setOutput(result as string);
-      } else if (process === "44") {
-        result = await process44(input.split('\n'), model);
-        setOutput((result as string[]).join("\n"));
-      } else if (process === "819931") {
-        result = await process819931(input.split('\n'), model);
-        setOutput((result as string[]).join("\n"));
-      }
+      } 
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {

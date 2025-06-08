@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface ProcessData {
   processName: string;
   processId: string;
@@ -43,8 +41,7 @@ const PROCESS_CONFIG = {
 
 export const processData = async (
   inputLines: string[],
-  model: 'gpt-4.1' | 'gpt-4.1-nano' = 'gpt-4.1',
-  retryCount = 0
+  model: 'gpt-4.1' | 'gpt-4.1-nano' = 'gpt-4.1'
 ): Promise<string[]> => {
   try {
     const inputText = inputLines.join('\\n');

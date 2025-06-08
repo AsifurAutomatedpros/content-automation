@@ -27,15 +27,14 @@ const PROCESS_CONFIG = {
 
 export const processData = async (
   inputLines: string[],
-  model: 'gpt-4.1' | 'gpt-4.1-nano' = 'gpt-4.1',
-  retryCount = 0
+  model: 'gpt-4.1' | 'gpt-4.1-nano' = 'gpt-4.1'
 ): Promise<string[]> => {
   try {
     const inputText = inputLines.join('\n');
     
     // Read required files
-    const knowledgeBaseContent = await fetch(`/knowledgebase/${PROCESS_CONFIG.name}/${PROCESS_CONFIG.name}KnowledgeBase.txt?t=${Date.now()}`).then(res => res.text());
-    const schemaToolContent = await fetch(`/instructions/${PROCESS_CONFIG.name}/${PROCESS_CONFIG.name}.txt?t=${Date.now()}`).then(res => res.text());
+    const knowledgeBaseContent = await fetch(`/knowledgebase/Sometimes/SometimesKnowledgeBase.txt?t=${Date.now()}`).then(res => res.text());
+    const schemaToolContent = await fetch(`/instructions/Sometimes/Sometimes.txt?t=${Date.now()}`).then(res => res.text());
 
     // Prepare the prompt
     const prompt = `${PROCESS_CONFIG.gptValidation}\n\nFollow these instructions strictly:\n1. Read the knowledge base.\n2. Read the schema-tool.\n3. Check the input prompt.\n4. Prepare the output.\n5. Validate the output.\n6. If any issue is found, send for recheck with output format.\n\nValidation: ${PROCESS_CONFIG.validation}\n\nKnowledge Base:\n${knowledgeBaseContent}\n\nSchema Tool:\n${schemaToolContent}\n\nInput:\n${inputText}`;

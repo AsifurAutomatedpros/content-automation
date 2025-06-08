@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { createProcess } from '@/operations/createprocess';
 
 interface ProcessField {
   id: number;
@@ -12,17 +13,6 @@ interface ProcessOption {
   value: string;
   path: string;
 }
-
-// Function to format process name for display
-const formatProcessName = (fileName: string): string => {
-  // Remove .tsx extension
-  const nameWithoutExt = fileName.replace('.tsx', '');
-  // Split by capital letters and join with spaces
-  return nameWithoutExt
-    .split(/(?=[A-Z])/)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-};
 
 const outputOptions = [
   { label: "Text", value: "text" },
@@ -38,6 +28,7 @@ export default function CreateCombination() {
   const [outputType, setOutputType] = useState('');
   const [processOptions, setProcessOptions] = useState<ProcessOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Load process options on component mount
   useEffect(() => {
@@ -96,34 +87,26 @@ export default function CreateCombination() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    try {
-      const response = await fetch('/api/create-combination', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          combinationName,
-          combinationId,
-          isActive,
-          processes: processFields,
-          outputType,
-        }),
-      });
+    setIsLoading(true);
+    setError(null);
 
-      const result = await response.json();
-      
-      if (result.success) {
-        // Redirect to the new combination page
-        window.location.href = `/${combinationName.toLowerCase().replace(/\s+/g, '')}`;
-      } else {
-        console.error('Error creating combination:', result.error);
-        // Handle error (you might want to show an error message to the user)
-      }
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      // Handle error (you might want to show an error message to the user)
+    try {
+      await createProcess({
+        processName: combinationName,
+        processId: combinationId,
+        status: isActive,
+        instruction: '',
+        validation: '',
+        knowledgeBase: [],
+        schemaTool: [],
+        gptValidation: '',
+        outputStyle: outputType,
+      });
+      // Handle success
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -138,7 +121,11 @@ export default function CreateCombination() {
   return (
     <div className="max-w-4xl mx-auto p-8">
       <h1 className="text-2xl font-bold mb-6">Create New Combination</h1>
-      
+      {error && (
+        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Combination Name and ID */}
         <div className="grid grid-cols-2 gap-4">
