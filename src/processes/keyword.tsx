@@ -20,9 +20,9 @@ interface ProcessProps {
 
 // Process configuration
 const PROCESS_CONFIG = {
-  name: "sometimes",
-  validation: "For each phrase, output exactly 4 keywords in the format [Subject] [Action] [Camera] [Modifier], no other content, just  list of four keywords per phrase as per the knowledge base and schema tool so there will be many four keywords as there are many phrases in the input.",
-  gptValidation: "For each phrase in the input, you MUST output exactly 4 keywords (no more, no less) for each phrase add serial number like 1,2,3 for each set of 4 keywords, and nothing else. Each line must be in the format: [Subject] [Action] [Camera] [Modifier]."
+  name: "544459",
+  validation: "",
+  gptValidation: ""
 };
 
 export const processData = async (
@@ -33,8 +33,8 @@ export const processData = async (
     const inputText = inputLines.join('\n');
     
     // Read required files
-    const knowledgeBaseContent = await fetch(`/knowledgebase/Sometimes/SometimesKnowledgeBase.txt?t=${Date.now()}`).then(res => res.text());
-    const schemaToolContent = await fetch(`/instructions/Sometimes/Sometimes.txt?t=${Date.now()}`).then(res => res.text());
+    const knowledgeBaseContent = await fetch(`/knowledgebase/${PROCESS_CONFIG.name}/${PROCESS_CONFIG.name}KnowledgeBase.txt?t=${Date.now()}`).then(res => res.text());
+    const schemaToolContent = await fetch(`/instructions/${PROCESS_CONFIG.name}/${PROCESS_CONFIG.name}.txt?t=${Date.now()}`).then(res => res.text());
 
     // Prepare the prompt
     const prompt = `${PROCESS_CONFIG.gptValidation}\n\nFollow these instructions strictly:\n1. Read the knowledge base.\n2. Read the schema-tool.\n3. Check the input prompt.\n4. Prepare the output.\n5. Validate the output.\n6. If any issue is found, send for recheck with output format.\n\nValidation: ${PROCESS_CONFIG.validation}\n\nKnowledge Base:\n${knowledgeBaseContent}\n\nSchema Tool:\n${schemaToolContent}\n\nInput:\n${inputText}`;

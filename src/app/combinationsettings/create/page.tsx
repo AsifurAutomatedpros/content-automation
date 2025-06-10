@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { createProcess } from '@/operations/createprocess';
+import { createCombinationPage } from '@/operations/createcombinationlogic';
 
 interface ProcessField {
   id: number;
@@ -91,18 +91,24 @@ export default function CreateCombination() {
     setError(null);
 
     try {
-      await createProcess({
-        processName: combinationName,
-        processId: combinationId,
-        status: isActive,
-        instruction: '',
-        validation: '',
-        knowledgeBase: [],
-        schemaTool: [],
-        gptValidation: '',
-        outputStyle: outputType,
+      const result = await createCombinationPage({
+        combinationName,
+        combinationId,
+        isActive,
+        processes: processFields.map(field => ({
+          id: field.id,
+          path: field.path,
+          name: field.value
+        })),
+        outputType
       });
-      // Handle success
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create combination');
+      }
+
+      // Handle success - you might want to redirect or show a success message
+      console.log('Combination created successfully:', result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

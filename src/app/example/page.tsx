@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { extractKeywords as extract3 } from "@/processes/3KeyWordExtractor";
 import { extractKeywords as extract4 } from "@/processes/4KeyWordsExtractor";
 import { metaTagSearch } from "@/processes/MetaTagSearch";
+import { processData as keywordFinal } from "@/processes/keyword Final";
 
 
 const modelOptions = [
@@ -14,6 +15,7 @@ const processOptions = [
   { label: "3 Keyword Extractor", value: "3" },
   { label: "4 Keyword Extractor", value: "4" },
   { label: "Meta Tag Search", value: "meta" },
+  { label: "Keyword Final", value: "keyword-final" },
   { label: "44 Process", value: "44" },
   { label: "sometimes", value: "819931" },
 ];
@@ -44,7 +46,10 @@ export default function ExamplePage() {
         const inputLines = input.split("\n").map(line => line.trim()).filter(line => line.length > 0);
         result = await metaTagSearch(inputLines, model);
         setOutput(result as string);
-      } 
+      } else if (process === "keyword-final") {
+        result = await keywordFinal(input.split('\n'), model);
+        setOutput((result as string[]).join("\n"));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -103,7 +108,7 @@ export default function ExamplePage() {
         <textarea
           value={output}
           readOnly
-          className="w-full h-64 p-3 border rounded-lg bg-gray-50"
+          className="w-full h-64 p-3 border rounded-lg bg-black text-white"
         />
       </div>
     </div>
