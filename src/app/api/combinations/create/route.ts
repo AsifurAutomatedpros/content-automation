@@ -44,7 +44,7 @@ function generatePageContent(formData: FormData): string {
 
   const processImports = processes
     .sort((a, b) => a.id - b.id)
-    .map(p => p.importLine)
+    .map(p => getImportLineFromExample(p.path))
     .join('\n');
 
   const processSteps = processes

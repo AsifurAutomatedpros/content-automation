@@ -5,15 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import Icon, { iconPaths } from "@/components/icon/Icon";
 import { typography } from "@/app/styles/typography";
-import { CheckboxItem } from "@/components/ui/checkbox-item";
-import { InputField } from "@/components/ui/InputField";
-import { ToggleSwitch } from "@/components/ui/toggle-switch";
-import { Button } from "@/components/ui/button";
-import OrderLabel from "@/components/ui/order-label";
-import { Textarea } from "@/components/ui/textarea";
-import { RadioItem } from "@/components/ui/radio-item";
-import { InputLabel } from "@/components/ui/InputLabel";
-import IconicButton from "@/components/IconicButton";
+
 
 const tableCellVariants = cva(
   "flex items-center w-full min-h-[64px] border-b border-black-10 transition-colors duration-200 bg-white-60",
@@ -269,16 +261,7 @@ export const TableCell = React.forwardRef<HTMLDivElement, TableCellProps>(
             </div>
           );
 
-        case "checkbox":
-          return (
-            <CheckboxItem
-              label=""
-              checked={checked}
-              indeterminate={indeterminate}
-              onCheck={onCheckedChange}
-              size="small"
-            />
-          );
+       
 
         case "date":
           return (
@@ -303,24 +286,7 @@ export const TableCell = React.forwardRef<HTMLDivElement, TableCellProps>(
         case "empty":
           return <span className={typography.BodyNormal}>—</span>;
 
-        case "expandable":
-        case "expandable-sub":
-          return (
-            <div className="flex items-center gap-1 pr-s py-xs">
-              {type === "expandable" && (
-                <IconicButton
-                  buttonType="white"
-                  size="small"
-                  onClick={onExpandClick}
-                  className="min-w-[32px] min-h-[32px] p-0"
-                  icon={
-                    expanded ? "keyboard-arrow-down-20" : "chevron-right-20"
-                  }
-                />
-              )}
-              <span className={typography.BodyBold}>{content}</span>
-            </div>
-          );
+      
 
         case "notification":
         case "read-notification":
@@ -335,27 +301,6 @@ export const TableCell = React.forwardRef<HTMLDivElement, TableCellProps>(
             </span>
           );
 
-        case "radio":
-          return (
-            <RadioItem
-              label=""
-              checked={checked}
-              onChange={onCheckedRadioChange}
-              size="small"
-            />
-          );
-
-        case "status":
-          return (
-            <OrderLabel
-              className={cn(
-                "px-2 py-1 rounded-2xl text-white",
-                typography.BodyNormal
-              )}
-              type={status || "Ordered"}
-              size="Medium"
-            ></OrderLabel>
-          );
 
         case "text-link":
           return (
@@ -374,14 +319,7 @@ export const TableCell = React.forwardRef<HTMLDivElement, TableCellProps>(
             </div>
           );
 
-        case "toggle":
-          return (
-            <ToggleSwitch
-              checked={checked}
-              onCheckedChange={onToggleCheckedChange}
-              size="large"
-            />
-          );
+       
 
         case "translate-2-line":
           return (
@@ -434,20 +372,7 @@ export const TableCell = React.forwardRef<HTMLDivElement, TableCellProps>(
                   />
                 ))}
               </div>
-              <div className="flex items-center gap-2">
-                {(buttons || [{ text: "Button", variant: "primary" }]).map(
-                  (buttonConfig, index) => (
-                    <Button
-                      key={index}
-                      variant={buttonConfig.variant || "primary"}
-                      size="small"
-                      onClick={buttonConfig.onClick}
-                    >
-                      {buttonConfig.text}
-                    </Button>
-                  )
-                )}
-              </div>
+              
             </div>
           );
 
@@ -464,133 +389,12 @@ export const TableCell = React.forwardRef<HTMLDivElement, TableCellProps>(
                   />
                 ))}
               </div>
-              <div className="flex items-center gap-2">
-                {(buttons || [{ text: "Button", variant: "primary" }]).map(
-                  (buttonConfig, index) => (
-                    <Button
-                      key={index}
-                      variant={buttonConfig.variant || "primary"}
-                      size="large"
-                      onClick={buttonConfig.onClick}
-                    >
-                      {buttonConfig.text}
-                    </Button>
-                  )
-                )}
-              </div>
+            
             </div>
           );
 
-        case "modifier":
-          return (
-            <div className="flex flex-col w-full gap-4 px-s py-m">
-              <div className="flex items-center gap-2">
-                <ToggleSwitch
-                  checked={checked}
-                  onCheckedChange={onModifierCheckedChange}
-                  size="large"
-                />
-                <span className={typography.BodyNormal}>
-                  {toggleLabel || content}
-                </span>
-              </div>
-              {checked && (
-                <div className="flex flex-col gap-s w-full">
-                  <div className="flex flex-col gap-xs">
-                    <InputLabel label="Price" />
-                    <InputField
-                      value={modifierValues?.price}
-                      placeholder="Enter Price"
-                      onChange={(e) =>
-                        onModifierChange?.price?.(e.target.value)
-                      }
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="grid grid-cols-3 gap-xs">
-                    <div className="flex flex-col gap-xs">
-                      <InputLabel label="Kcal" />
-                      <InputField
-                        value={modifierValues?.kcal}
-                        placeholder="Kcal"
-                        onChange={(e) =>
-                          onModifierChange?.kcal?.(e.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="flex flex-col gap-xs">
-                      <InputLabel label="Grams" />
-                      <InputField
-                        value={modifierValues?.grams}
-                        placeholder="Grams"
-                        onChange={(e) =>
-                          onModifierChange?.grams?.(e.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="flex flex-col gap-xs">
-                      <InputLabel label="Prots." />
-                      <InputField
-                        value={modifierValues?.prots}
-                        placeholder="Prots."
-                        onChange={(e) =>
-                          onModifierChange?.prots?.(e.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="flex flex-col gap-xs">
-                      <InputLabel label="Carbs" />
-                      <InputField
-                        value={modifierValues?.carbs}
-                        placeholder="Carbs"
-                        onChange={(e) =>
-                          onModifierChange?.carbs?.(e.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="flex flex-col gap-xs">
-                      <InputLabel label="Fats" />
-                      <InputField
-                        value={modifierValues?.fats}
-                        placeholder="Fats"
-                        onChange={(e) =>
-                          onModifierChange?.fats?.(e.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
 
-        case "input":
-          return (
-            <InputField
-              value={value}
-              placeholder={placeholder}
-              onChange={(e) => onInputChange?.(e.target.value)}
-              className="w-full"
-            />
-          );
 
-        case "input-2-line":
-          return (
-            <div className="flex flex-col gap-2 py-2 w-full">
-              <InputField
-                value={titleValue}
-                placeholder={titlePlaceholder}
-                onChange={(e) => onTitleChange?.(e.target.value)}
-                className="w-full"
-              />
-              <Textarea
-                value={descriptionValue}
-                placeholder={descriptionPlaceholder}
-                onChange={(e) => onDescriptionChange?.(e.target.value)}
-                className="w-full min-h-[120px] resize-none rounded-[24px] border border-black-10"
-              />
-            </div>
-          );
 
         case "custom":
           return (

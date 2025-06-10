@@ -3,8 +3,7 @@ import { createPortal } from "react-dom";
 import { typography } from "@/app/styles/typography";
 import Icon from "@/components/icon/Icon";
 import { cn } from "@/lib/utils";
-import { CheckboxSymbol } from "@/components/ui/checkbox-symbol";
-import { DatePicker } from "@/components/DatePicker";
+
 
 export type FilterDesktopType = "Selectbox" | "Text input" | "SearchableSelectbox" | "Datepicker";
 export type FilterDesktopState =
@@ -321,13 +320,7 @@ export const FilterDesktop: React.FC<FilterDesktopProps> = ({
     
     return (
       <div className="absolute top-full left-0 z-10">
-        <DatePicker
-          selectedDate={selectedDate}
-          onDateSelect={handleDateSelect}
-          onClose={() => setShowDatePicker(false)}
-          isVisible={true}
-          type={datePickerType}
-        />
+       
       </div>
     );
   };
@@ -427,11 +420,7 @@ export const FilterDesktop: React.FC<FilterDesktopProps> = ({
                   handleInternalOptionSelect(option.value, e);
                 }}
               >
-                <CheckboxSymbol
-                  checked={isChecked}
-                  indeterminate={isSelectAllOption && isIndeterminate}
-                  size="small"
-                />
+               
                 {option.label}
               </div>
             );
@@ -630,11 +619,7 @@ export const FilterDesktop: React.FC<FilterDesktopProps> = ({
                         handleInternalOptionSelect(option.value, e);
                       }}
                     >
-                      <CheckboxSymbol
-                        checked={isChecked}
-                        indeterminate={isSelectAllOption && isIndeterminate}
-                        size="small"
-                      />
+                     
                       {option.label}
                     </div>
                   );
