@@ -6,6 +6,7 @@ import Icon, { iconPaths } from './icon/Icon';
 interface DropdownOption {
   label: string;
   value: string;
+  className?: string;
 }
 
 interface DropdownProps {
@@ -51,6 +52,7 @@ const Dropdown: React.FC<DropdownProps> = ({
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button
+        type="button"
         className={`
           ${typography.BodyNormal}
           w-full
@@ -72,10 +74,14 @@ const Dropdown: React.FC<DropdownProps> = ({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
       >
-        <span className="truncate">
+        <span className={selectedOption ? 'text-black' : 'text-black opacity-50'}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
-        <Icon name={icon} size={24} />
+        <Icon
+          name={icon}
+          size={24}
+          className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {isOpen && (
@@ -96,6 +102,8 @@ const Dropdown: React.FC<DropdownProps> = ({
                   focus:outline-none
                   focus:ring-2
                   focus:ring-[var(--color-brand-orange)]
+                  text-black
+                  placeholder:text-black
                 `}
                 placeholder="Search..."
                 value={searchTerm}
@@ -110,16 +118,10 @@ const Dropdown: React.FC<DropdownProps> = ({
           </div>
           <div className="max-h-60 overflow-auto">
             {filteredOptions.map((option) => (
-              <div
+              <button
                 key={option.value}
-                className={`
-                  ${typography.BodyNormal}
-                  px-4
-                  py-2
-                  cursor-pointer
-                  hover:bg-[var(--color-brand-orange-16)]
-                  ${option.value === value ? 'bg-[var(--color-brand-orange-16)]' : ''}
-                `}
+                type="button"
+                className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${option.value === value ? 'bg-gray-100' : ''} ${option.className || 'text-black'}`}
                 onClick={() => {
                   onChange(option.value);
                   setIsOpen(false);
@@ -127,7 +129,7 @@ const Dropdown: React.FC<DropdownProps> = ({
                 }}
               >
                 {option.label}
-              </div>
+              </button>
             ))}
             {filteredOptions.length === 0 && (
               <div className={`${typography.BodyNormal} px-4 py-2 text-[var(--color-text-black-40)]`}>

@@ -4,6 +4,8 @@ import { extractKeywords as extract3 } from "@/processes/3KeyWordExtractor";
 import { extractKeywords as extract4 } from "@/processes/4KeyWordsExtractor";
 import { metaTagSearch } from "@/processes/MetaTagSearch";
 import { processData as keywordFinal } from "@/processes/keyword Final";
+import { Process as GptCode5Process, processData as gptCode5ProcessData } from '@/processes/GptCode5tsx';
+import { Process as NewProUltraProcess, processData as newProUltraProcessData } from '@/processes/new_pro_ultratsx';
 
 
 const modelOptions = [
@@ -18,6 +20,8 @@ const processOptions = [
   { label: "Keyword Final", value: "keyword-final" },
   { label: "44 Process", value: "44" },
   { label: "sometimes", value: "819931" },
+  { label: "GptCode5", value: "gptcode5" },
+  { label: "New Pro Ultra", value: "new_pro_ultratsx" },
 ];
 
 type ModelType = 'gpt-4.1' | 'gpt-4.1-nano';
@@ -49,6 +53,12 @@ export default function ExamplePage() {
       } else if (process === "keyword-final") {
         result = await keywordFinal(input.split('\n'), model);
         setOutput((result as string[]).join("\n"));
+      } else if (process === "gptcode5") {
+        result = await gptCode5ProcessData(input.split('\n'));
+        setOutput(typeof result === 'string' ? result : JSON.stringify(result));
+      } else if (process === "new_pro_ultratsx") {
+        result = await newProUltraProcessData(input.split('\n'));
+        setOutput(typeof result === 'string' ? result : JSON.stringify(result));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");

@@ -65,4 +65,32 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
+}
+
+export async function POST(request: Request) {
+  try {
+    const { filename, content } = await request.json();
+    if (!filename || !content) {
+      return NextResponse.json(
+        { error: 'Filename and content are required' },
+        { status: 400 }
+      );
+    }
+    // Sanitize filename (no path traversal)
+    const safeFilename = path.basename(filename).replace(/[^a-zA-Z0-9_-]/g, '') + '.tsx';
+    const processesDir = path.join(process.cwd(), 'src', 'processes');
+    const filePath = path.join(processesDir, safeFilename);
+    // Ensure the processes directory exists
+    if (!fs.existsSync(processesDir)) {
+      fs.mkdirSync(processesDir, { recursive: true });
+    }
+    fs.writeFileSync(filePath, content, 'utf-8');
+    return NextResponse.json({ success: true, path: filePath });
+  } catch (error) {
+    console.error('Error writing process file:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to write process file' },
+      { status: 500 }
+    );
+  }
 } 

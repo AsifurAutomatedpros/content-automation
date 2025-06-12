@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import InputText from './inputtext';
 import Output from './output';
 import Button from './button';
 import Dropdown from './dropdown';
 import ToggleButton from './togglebutton';
 import { createProcess } from '@/operations/createprocess';
+import { TypeConfig } from '@/types/inputfields/typesanditsinputfields';
+import { ProcessData } from '@/types/process';
+import AddTypeForm from './addType';
+import { typeConfigs } from '@/types/inputfields/typesanditsinputfields';
+import { generateProcessFile } from '@/operations/createprocess';
 
 const outputStyleOptions = [
   { label: 'Text', value: 'text' },
@@ -22,18 +27,57 @@ const ProcessForm: React.FC = () => {
   const [status, setStatus] = useState(true);
   const [instruction, setInstruction] = useState('');
   const [validation, setValidation] = useState('');
-  const [knowledgeBase, setKnowledgeBase] = useState<File[]>([]);
-  const [schemaTool, setSchemaTool] = useState<File[]>([]);
   const [gptValidation, setGptValidation] = useState('');
   const [outputStyle, setOutputStyle] = useState('text');
+  const [selectedType, setSelectedType] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [dynamicFields, setDynamicFields] = useState<Record<string, any>>({});
+  const [showAddType, setShowAddType] = useState(false);
+  const [types, setTypes] = useState<TypeConfig[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(true);
 
-  const handleFileChange = (setter: React.Dispatch<React.SetStateAction<File[]>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    fetchTypes();
+  }, []);
+
+  const fetchTypes = async () => {
+    try {
+      setLoadingTypes(true);
+      const response = await fetch('/api/types');
+      if (!response.ok) {
+        throw new Error('Failed to fetch types');
+      }
+      const data = await response.json();
+      setTypes(data.types);
+      if (data.types.length > 0) {
+        setSelectedType(data.types[0].value);
+      }
+    } catch (error) {
+      console.error('Error fetching types:', error);
+      setError('Failed to load types');
+    } finally {
+      setLoadingTypes(false);
+    }
+  };
+
+  const handleFileChange = (fieldId: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      setter(files);
+      setDynamicFields(prev => ({ ...prev, [fieldId]: files }));
+    }
+  };
+
+  const handleTextChange = (fieldId: string) => (value: string) => {
+    setDynamicFields(prev => ({ ...prev, [fieldId]: value }));
+  };
+
+  const handleAddType = async (newType: any) => {
+    try {
+      await fetchTypes(); // Refresh types after adding new one
+    } catch (error) {
+      console.error('Error refreshing types:', error);
     }
   };
 
@@ -44,85 +88,227 @@ const ProcessForm: React.FC = () => {
     setSuccess(null);
     try {
       if (!processName.trim()) throw new Error('Process name is required');
-      if (knowledgeBase.length === 0) throw new Error('At least one knowledge base file is required');
-      if (schemaTool.length === 0) throw new Error('At least one schema tool file is required');
-      if (!gptValidation.trim()) throw new Error('GPT validation instruction is required');
-      if (!validation.trim()) throw new Error('Validation logic is required');
-      const processData = {
-        processName,
-        processId,
-        status,
-        instruction,
-        validation,
-        knowledgeBase,
-        schemaTool,
-        gptValidation,
-        outputStyle
-      };
-      await createProcess(processData);
-      setSuccess('Process created successfully!');
+      if (!gptValidation.trim()) throw new Error('LLM instruction is required');
+      if (!validation.trim()) throw new Error('LLM Validation is required');
+
+      const selectedTypeConfig = types.find(t => t.value === selectedType);
+      if (!selectedTypeConfig) throw new Error('Invalid type selected');
+
+      // Validate required fields
+      for (const field of selectedTypeConfig.fields) {
+        if (field.required && !dynamicFields[field.id]) {
+          throw new Error(`${field.label} is required`);
+        }
+      }
+
+      // Build the payload using the type config
+      const { payloadFields, mainPayloadField, mainPayloadFieldType, payloadType, endpoint } = selectedTypeConfig.api;
+      let payload: Record<string, any> = {};
+      // Add main payload field as empty or default value of its type
+      switch (mainPayloadFieldType) {
+        case 'int':
+          payload[mainPayloadField] = 0;
+          break;
+        case 'boolean':
+          payload[mainPayloadField] = false;
+          break;
+        case 'array':
+          payload[mainPayloadField] = [];
+          break;
+        case 'file':
+          payload[mainPayloadField] = null;
+          break;
+        default:
+          payload[mainPayloadField] = '';
+      }
+      payloadFields.forEach(field => {
+        let value;
+        if (field.sourceType === 'input') {
+          value = dynamicFields[field.source];
+        } else {
+          value = field.source;
+        }
+        switch (field.type) {
+          case 'int':
+            value = parseInt(value, 10);
+            break;
+          case 'boolean':
+            value = value === 'true' || value === true;
+            break;
+          case 'array':
+            if (typeof value === 'string') {
+              value = value.split(',').map((v: string) => v.trim());
+            }
+            break;
+          case 'file':
+            // leave as is (should be File or File[])
+            break;
+          default:
+            value = String(value);
+        }
+        payload[field.name] = value;
+      });
+
+      // Add process meta fields
+      payload.processName = processName;
+      payload.processId = processId;
+      payload.status = status;
+      payload.instruction = instruction;
+      payload.validation = validation;
+      payload.gptValidation = gptValidation;
+      payload.outputStyle = outputStyle;
+      payload.type = selectedType;
+
+      // Build the prompt for the process file
+      let prompt = `${gptValidation}\n\nFollow these instructions strictly:`;
+      prompt += `\nValidation: ${validation}`;
+      for (const field of selectedTypeConfig.fields) {
+        if (field.type === 'file') {
+          const label = field.label;
+          const files = dynamicFields[field.id];
+          if (files) {
+            for (const file of Array.isArray(files) ? files : [files]) {
+              // For now, just add the file name (not content) to the prompt
+              prompt += `\n\n${label}:\n${file.name}`;
+            }
+          }
+        }
+      }
+      prompt += `\n\nInput:\n${instruction}`;
+
+      // Generate the process file content
+      const processFileContent = generateProcessFile(selectedTypeConfig, payload, prompt);
+
+      // Sanitize process name for filename
+      const sanitizedProcessName = processName.replace(/[^a-zA-Z0-9_]/g, '_');
+      const filename = `${sanitizedProcessName}.tsx`;
+
+      // Save the process file using the API
+      const response = await fetch('/api/process-file', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename, content: processFileContent }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create process file.');
+      }
+      setSuccess('Process file created successfully!');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create process.');
+      setError(err instanceof Error ? err.message : 'Failed to create process file.');
     } finally {
       setLoading(false);
     }
   };
 
+  const renderDynamicFields = () => {
+    const selectedTypeConfig = types.find(t => t.value === selectedType);
+    if (!selectedTypeConfig) return null;
+
+    return selectedTypeConfig.fields.map(field => (
+      <div key={field.id}>
+        <label className="block mb-1 font-medium text-black">{field.label}</label>
+        {field.type === 'file' ? (
+          <>
+            <input
+              type="file"
+              multiple={field.multiple}
+              accept={field.accept}
+              onChange={handleFileChange(field.id)}
+              className="border rounded p-2 w-full"
+            />
+            {dynamicFields[field.id] && (
+              <div className="mt-2 text-sm text-gray-600">
+                {Array.isArray(dynamicFields[field.id])
+                  ? dynamicFields[field.id].map((file: File) => file.name).join(', ')
+                  : dynamicFields[field.id].name}
+              </div>
+            )}
+          </>
+        ) : (
+          <InputText
+            value={dynamicFields[field.id] || ''}
+            onChange={handleTextChange(field.id)}
+            placeholder={field.placeholder}
+            type={field.type}
+          />
+        )}
+      </div>
+    ));
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto p-6 bg-white rounded-lg shadow text-black">
-      <h2 className="text-xl font-bold mb-4 text-black">Create New Process</h2>
-      <div>
-        <label className="block mb-1 font-medium text-black">Process Name</label>
-        <InputText value={processName} onChange={setProcessName} placeholder="Enter process name" />
+    <div className="relative">
+      <div className="absolute top-0 right-0 p-4">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => setShowAddType(true)}
+        >
+          Add Type
+        </Button>
       </div>
-      <div>
-        <label className="block mb-1 font-medium text-black">Process ID</label>
-        <input type="text" value={processId} readOnly className="border rounded p-2 w-full bg-gray-100 text-gray-500 cursor-not-allowed" />
-      </div>
-      <div className="flex items-center gap-4">
-        <ToggleButton checked={status} onChange={setStatus} label="Status" />
-      </div>
-      <div>
-        <label className="block mb-1 font-medium text-black">Instruction</label>
-        <InputText value={instruction} onChange={setInstruction} placeholder="Enter process instruction" />
-      </div>
-      <div>
-        <label className="block mb-1 font-medium text-black">Validation</label>
-        <InputText value={validation} onChange={setValidation} placeholder="Enter validation logic or notes" />
-      </div>
-      <div>
-        <label className="block mb-1 font-medium text-black">Knowledge Base Files</label>
-        <input type="file" multiple accept=".txt" onChange={handleFileChange(setKnowledgeBase)} className="border rounded p-2 w-full" />
-        {knowledgeBase.length > 0 && (
-          <div className="mt-2 text-sm text-gray-600">{knowledgeBase.map(file => file.name).join(', ')}</div>
-        )}
-      </div>
-      <div>
-        <label className="block mb-1 font-medium text-black">Schema Tool Files</label>
-        <input type="file" multiple accept=".txt" onChange={handleFileChange(setSchemaTool)} className="border rounded p-2 w-full" />
-        {schemaTool.length > 0 && (
-          <div className="mt-2 text-sm text-gray-600">{schemaTool.map(file => file.name).join(', ')}</div>
-        )}
-      </div>
-      <div>
-        <label className="block mb-1 font-medium text-black">GPT Validation Instruction</label>
-        <InputText value={gptValidation} onChange={setGptValidation} placeholder="Enter GPT validation instruction" />
-      </div>
-      <div>
-        <label className="block mb-1 font-medium text-black">Output Style</label>
-        <Dropdown
-          options={outputStyleOptions}
-          value={outputStyle}
-          onChange={setOutputStyle}
-          placeholder="Select output style"
+
+      <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto p-6 bg-white rounded-lg shadow text-black">
+        <h2 className="text-xl font-bold mb-4 text-black">Create New Process</h2>
+        <div>
+          <label className="block mb-1 font-medium text-black">Process Name</label>
+          <InputText value={processName} onChange={setProcessName} placeholder="Enter process name" />
+        </div>
+        <div>
+          <label className="block mb-1 font-medium text-black">Process ID</label>
+          <input type="text" value={processId} readOnly className="border rounded p-2 w-full bg-gray-100 text-gray-500 cursor-not-allowed" />
+        </div>
+        <div>
+          <label className="block mb-1 font-medium text-black">Type</label>
+          {loadingTypes ? (
+            <div className="text-gray-500">Loading types...</div>
+          ) : (
+            <Dropdown
+              options={types.map(t => ({ label: t.label, value: t.value }))}
+              value={selectedType}
+              onChange={setSelectedType}
+              placeholder="Select type"
+            />
+          )}
+        </div>
+        <div className="flex items-center gap-4">
+          <ToggleButton checked={status} onChange={setStatus} label="Status" />
+        </div>
+        <div>
+          <label className="block mb-1 font-medium text-black">LLM Validation</label>
+          <InputText value={validation} onChange={setValidation} placeholder="Enter validation logic or notes" />
+        </div>
+        <div>
+          <label className="block mb-1 font-medium text-black">LLM Instruction</label>
+          <InputText value={gptValidation} onChange={setGptValidation} placeholder="Enter GPT validation instruction" />
+        </div>
+        <div>
+          <label className="block mb-1 font-medium text-black">Output Style</label>
+          <Dropdown
+            options={outputStyleOptions}
+            value={outputStyle}
+            onChange={setOutputStyle}
+            placeholder="Select output style"
+          />
+        </div>
+        {renderDynamicFields()}
+        <Button type="submit" variant="primary" disabled={loading}>
+          {loading ? 'Submitting...' : 'Submit'}
+        </Button>
+        {error && <div className="text-red-600 mt-2">{error}</div>}
+        {success && <div className="text-green-600 mt-2">{success}</div>}
+      </form>
+
+      {showAddType && (
+        <AddTypeForm
+          onClose={() => setShowAddType(false)}
+          onAddType={handleAddType}
+          setSelectedType={setSelectedType}
+          setShowAddType={setShowAddType}
         />
-      </div>
-      <Button type="submit" variant="primary" disabled={loading}>
-        {loading ? 'Submitting...' : 'Submit'}
-      </Button>
-      {error && <div className="text-red-600 mt-2">{error}</div>}
-      {success && <div className="text-green-600 mt-2">{success}</div>}
-    </form>
+      )}
+    </div>
   );
 };
 

@@ -1,3 +1,5 @@
+import { typeConfigs } from '@/types/inputfields/typesanditsinputfields';
+
 interface ProcessData {
   processName: string;
   processId: string;
@@ -10,158 +12,177 @@ interface ProcessData {
   outputStyle: string;
 }
 
-// Function to generate the process file content
-const generateProcessFile = (processData: ProcessData): string => {
-  return `'use client';
+// Function to generate the process file content dynamically
+export const generateProcessFile = (typeConfig: any, formData: Record<string, any>, prompt: string): string => {
+  const responsePath = typeConfig.api.responsePath.startsWith('.') ? typeConfig.api.responsePath : '.' + typeConfig.api.responsePath;
+  const mainField = typeConfig.api.mainPayloadField;
+  const payloadFieldsConfig = typeConfig.api.payloadFields || [];
+  // Build the payload assignment as a string: only main payload field and payloadFields
+  const payloadFieldAssignments = payloadFieldsConfig
+    .filter((field: any) => field.name !== mainField)
+    .map((field: any) => `${JSON.stringify(field.name)}: ${JSON.stringify(formData[field.name])}`)
+    .join(', ');
+  // Escape newlines in the prompt for a valid JS string
+  const escapedPrompt = prompt.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/\r/g, '');
+  // Set outputType from config, mapping 'string' to 'text'
+  const outputType = typeConfig.api.mainPayloadFieldType === 'string' ? 'text' : (typeConfig.api.mainPayloadFieldType || 'text');
+  return `"use client";
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
+import Output from '@/components/output';
 
 interface ProcessResponse {
   message: string;
-  data: {
-    choices: Array<{
-      message: {
-        content: string;
-      };
-    }>;
-  };
+  data: any;
 }
 
 interface ProcessProps {
   inputText: string;
-  model?: 'gpt-4.1' | 'gpt-4.1-nano';
 }
 
-// Process configuration
-const PROCESS_CONFIG = {
-  name: "${processData.processId}",
-  validation: "${processData.validation}",
-  gptValidation: "${processData.gptValidation}"
-};
-
 export const processData = async (
-  inputLines: string[],
-  model: 'gpt-4.1' | 'gpt-4.1-nano' = 'gpt-4.1'
-): Promise<string[]> => {
+  inputLines: string[]
+): Promise<any> => {
   try {
-    const inputText = inputLines.join('\\n');
-    
-    // Read required files
-    const knowledgeBaseContent = await fetch(\`/knowledgebase/\${PROCESS_CONFIG.name}/\${PROCESS_CONFIG.name}KnowledgeBase.txt?t=\${Date.now()}\`).then(res => res.text());
-    const schemaToolContent = await fetch(\`/instructions/\${PROCESS_CONFIG.name}/\${PROCESS_CONFIG.name}.txt?t=\${Date.now()}\`).then(res => res.text());
-
+    const inputText = inputLines.join("\\n");
     // Prepare the prompt
-    const prompt = \`\${PROCESS_CONFIG.gptValidation}\\n\\nFollow these instructions strictly:\\n1. Read the knowledge base.\\n2. Read the schema-tool.\\n3. Check the input prompt.\\n4. Prepare the output.\\n5. Validate the output.\\n6. If any issue is found, send for recheck with output format.\\n\\nValidation: \${PROCESS_CONFIG.validation}\\n\\nKnowledge Base:\\n\${knowledgeBaseContent}\\n\\nSchema Tool:\\n\${schemaToolContent}\\n\\nInput:\\n\${inputText}\`;
-
-    // Prepare FormData
-    const formData = new FormData();
-    formData.append('model', model);
-    formData.append('messages', prompt);
-    formData.append('temperature', '0.7');
-    formData.append('max_tokens', '4000');
-    formData.append('knowledge_base', new Blob([knowledgeBaseContent], { type: 'text/plain' }), 'knowledge_base.txt');
-    formData.append('schema_tool', new Blob([schemaToolContent], { type: 'text/plain' }), 'schema_tool.txt');
-
+    const generatedPrompt = "${escapedPrompt}";
+    // Prepare payload
+    const payload = { ${payloadFieldAssignments}${payloadFieldAssignments ? ', ' : ''}${JSON.stringify(mainField)}: generatedPrompt };
     // Make API call
-    const response = await axios.post<ProcessResponse>(
-      'https://dev.felidae.network/api/chatgpt/chat_completion',
-      formData,
-      { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 60000 }
+    const response = await axios.post(
+      '${typeConfig.api.endpoint}',
+      payload,
+      { headers: { 'Content-Type': '${typeConfig.api.payloadType === 'multipart' ? 'multipart/form-data' : 'application/json'}' }, timeout: 60000 }
     );
-
-    const content = response.data.data.choices[0].message.content;
-    const results = content
-      .split('\\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0);
-
-    return results;
+    // Extract output using responsePath
+    const output = response.data${responsePath};
+    return output;
   } catch (error) {
     console.error('Error processing data:', error);
     throw error;
   }
 };
 
-// Component for using the process
 export const Process: React.FC<ProcessProps> = ({ 
-  inputText,
-  model = 'gpt-4.1'
+  inputText
 }) => {
-  const [results, setResults] = useState<string[]>([]);
+  const [output, setOutput] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const processText = async () => {
       if (!inputText) return;
-      
       setLoading(true);
       setError(null);
-      
       try {
-        const result = await processData(inputText.split('\\n'), model);
-        setResults(result);
+        const result = await processData(inputText.split("\\n"));
+        setOutput(result);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
       }
     };
-
     processText();
-  }, [inputText, model]);
+  }, [inputText]);
 
   if (loading) return <div>Processing...</div>;
   if (error) return <div>Error: {error}</div>;
-  if (!results.length) return null;
+  if (!output) return null;
 
-  return (
-    <div>
-      {results.map((result, index) => (
-        <div key={index}>{result}</div>
-      ))}
-    </div>
-  );
+  return <Output type={"${outputType}"} content={output} />;
 };
 
-export default Process;`;
+export default Process;
+`;
 };
 
-export const createProcess = async (processData: ProcessData): Promise<boolean> => {
+// Utility to read file content as text
+async function readFileContent(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+}
+
+// Main process execution function
+export const createProcess = async ({ endpoint, payload, headers, payloadType, typeConfig, dynamicFields, gptValidation, validation, userInput, processId, processName }: {
+  endpoint: string;
+  payload: any;
+  headers: any;
+  payloadType: string;
+  typeConfig: any;
+  dynamicFields: Record<string, any>;
+  gptValidation: string;
+  validation: string;
+  userInput: string;
+  processId: string;
+  processName: string;
+}) => {
   try {
-    // Step 1: Create the process file and upload files
-    const formData = new FormData();
-    formData.append('processName', processData.processName);
-    formData.append('processId', processData.processId);
-    formData.append('status', processData.status.toString());
-    formData.append('instruction', processData.instruction);
-    formData.append('validation', processData.validation);
-    formData.append('gptValidation', processData.gptValidation);
-    formData.append('outputStyle', processData.outputStyle);
-    formData.append('processFileContent', generateProcessFile(processData));
+    // Build the prompt
+    let prompt = `${gptValidation}\n\nFollow these instructions strictly:`;
+    prompt += `\nValidation: ${validation}`;
+    // Add file field contents to the prompt
+    for (const field of typeConfig.fields) {
+      if (field.type === 'file') {
+        const label = field.label;
+        const files = dynamicFields[field.id];
+        if (files) {
+          for (const file of Array.isArray(files) ? files : [files]) {
+            const content = await readFileContent(file);
+            prompt += `\n\n${label}:\n${content}`;
+          }
+        }
+      }
+    }
+    prompt += `\n\nInput:\n${userInput}`;
 
-    // Append files
-    processData.knowledgeBase.forEach(file => {
-      formData.append('knowledgeBase', file);
-    });
-    processData.schemaTool.forEach(file => {
-      formData.append('schemaTool', file);
-    });
+    // Set main payload field to prompt
+    payload[typeConfig.api.mainPayloadField] = prompt;
 
-    // Create the process
-    const createResponse = await fetch('/api/process/create', {
-      method: 'POST',
-      body: formData,
-    });
-
-    const createResult = await createResponse.json();
-
-    if (!createResult.success) {
-      throw new Error(createResult.error || 'Failed to create process');
+    // Prepare FormData if needed
+    let apiPayload = payload;
+    if (payloadType === 'multipart') {
+      const formDataObj = new FormData();
+      Object.entries(payload).forEach(([key, value]) => {
+        if (value instanceof File) {
+          formDataObj.append(key, value);
+        } else if (Array.isArray(value)) {
+          value.forEach(file => {
+            if (file) formDataObj.append(key, file);
+          });
+        } else if (value !== undefined && value !== null) {
+          formDataObj.append(key, String(value));
+        }
+      });
+      apiPayload = formDataObj;
     }
 
-    console.log('Process created successfully');
-    return true;
+    // Make the API call
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: payloadType === 'multipart' ? undefined : headers,
+      body: apiPayload,
+    });
+    const result = await response.json();
+    if (!result.success && result.error) {
+      throw new Error(result.error);
+    }
+
+    // Write the process file to /processes via API
+    const processFileContent = generateProcessFile(typeConfig, payload, prompt);
+    await fetch('/api/process-file', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: processName, content: processFileContent }),
+    });
+
+    return result;
   } catch (error) {
     console.error('Error in createProcess:', error);
     throw error;
