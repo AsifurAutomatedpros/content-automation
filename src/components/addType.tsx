@@ -19,7 +19,7 @@ interface Field {
 
 interface PayloadField {
   name: string;
-  type: 'string' | 'array' | 'int' | 'boolean' | 'file';
+  type: 'string' | 'array' | 'int' | 'float' | 'boolean' | 'file';
   sourceType: 'input' | 'static';
   source: string; // input field id or static value
 }
@@ -65,6 +65,7 @@ const AddTypeForm: React.FC<AddTypeFormProps> = ({ onClose, onAddType, setSelect
     { label: 'String', value: 'string', className: 'text-black' },
     { label: 'Array', value: 'array', className: 'text-black' },
     { label: 'Integer', value: 'int', className: 'text-black' },
+    { label: 'Float', value: 'float', className: 'text-black' },
     { label: 'Boolean', value: 'boolean', className: 'text-black' },
     { label: 'File', value: 'file', className: 'text-black' },
   ];
@@ -185,6 +186,9 @@ const AddTypeForm: React.FC<AddTypeFormProps> = ({ onClose, onAddType, setSelect
               switch (field.type) {
                 case 'int':
                   value = parseInt(value, 10);
+                  break;
+                case 'float':
+                  value = parseFloat(value);
                   break;
                 case 'boolean':
                   value = value === 'true' || value === true;

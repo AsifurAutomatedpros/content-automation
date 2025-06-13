@@ -27,7 +27,7 @@ export interface InputField {
 
 export interface PayloadField {
   name: string;
-  type: 'string' | 'array' | 'int' | 'boolean' | 'file';
+  type: 'string' | 'array' | 'int' | 'float' | 'boolean' | 'file';
   sourceType: 'input' | 'static';
   source: string;
 }
@@ -309,6 +309,180 @@ export const typeConfigs: TypeConfig[] = [
         payload['model'] = 'gemini-1.5-pro';
         payload['max_tokens'] = '200';
         payload['temperature'] = '0.7';
+        return payload;
+      }
+    }
+  }
+,
+  {
+    id: '9096',
+    label: 'final code',
+    value: 'final code',
+    fields: [
+  {
+    "id": "1",
+    "label": "attachments",
+    "type": "file",
+    "required": true,
+    "multiple": true
+  }
+],
+    api: {
+      endpoint: 'https://dev.felidae.network/api/chatgpt/code_generation',
+      payloadType: 'multipart',
+      responsePath: 'data.data.code',
+      responseExample: '{\n  "message": "Code generation successful.",\n  "data": {\n    "status": true,\n    "data": {\n      "code": "```python\ndef factorial(n: int) -> int:\n    if n < 0:\n        raise ValueError(\"Factorial is not defined for negative numbers.\")\n    if n == 0 or n == 1:\n        return 1\n    result = 1\n    for i in range(2, n + 1):\n        result *= i\n    return result\n```"\n    },\n    "timestamp": "2025-06-13T06:49:54+00:00"\n  }\n}',
+      mainPayloadField: 'description',
+      mainPayloadFieldType: 'string',
+      payloadFields: [
+  {
+    "type": "string",
+    "sourceType": "static",
+    "name": "model",
+    "source": "gpt-4o-mini"
+  },
+  {
+    "type": "int",
+    "sourceType": "static",
+    "name": "temperature",
+    "source": "0.7"
+  },
+  {
+    "type": "int",
+    "sourceType": "static",
+    "name": "max_tokens",
+    "source": "200"
+  },
+  {
+    "type": "array",
+    "sourceType": "input",
+    "name": "attachments",
+    "source": "1"
+  }
+],
+      payload: (formData: Record<string, any>) => {
+        const payload: Record<string, any> = {};
+        payload['description'] = '';
+        payload['model'] = 'gpt-4o-mini';
+        payload['temperature'] = '0.7';
+        payload['max_tokens'] = '200';
+        payload['attachments'] = formData['1'];
+        return payload;
+      }
+    }
+  }
+,
+  {
+    id: '7303',
+    label: 'fresh code',
+    value: 'fresh code',
+    fields: [
+  {
+    "id": "attachmentss",
+    "label": "1",
+    "type": "file",
+    "required": true,
+    "multiple": true
+  }
+],
+    api: {
+      endpoint: 'https://dev.felidae.network/api/gemini/code_generation',
+      payloadType: 'multipart',
+      responsePath: 'data.code',
+      responseExample: '{\n  "status": true,\n  "data": {\n    "code": "```html\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Simple HTML</title>\n</head>\n<body>\n    <div>\n        <h1>Hello, World!</h1>\n        <p>This is a simple HTML example.</p>\n    </div>\n</body>\n</html>\n```"\n  },\n  "timestamp": "2025-06-13T08:42:18+00:00"\n}',
+      mainPayloadField: 'prompt',
+      mainPayloadFieldType: 'string',
+      payloadFields: [
+  {
+    "type": "string",
+    "sourceType": "static",
+    "name": "model",
+    "source": "gemini-1.5-pro"
+  },
+  {
+    "type": "int",
+    "sourceType": "static",
+    "name": "max_tokens",
+    "source": "200"
+  },
+  {
+    "type": "float",
+    "sourceType": "static",
+    "name": "temperature",
+    "source": "0.7"
+  },
+  {
+    "type": "array",
+    "sourceType": "input",
+    "name": "attachments",
+    "source": "1"
+  }
+],
+      payload: (formData: Record<string, any>) => {
+        const payload: Record<string, any> = {};
+        payload['prompt'] = '';
+        payload['model'] = 'gemini-1.5-pro';
+        payload['max_tokens'] = 200;
+        payload['temperature'] = 0.7;
+        payload['attachments'] = formData['1'];
+        return payload;
+      }
+    }
+  }
+,
+  {
+    id: '2145',
+    label: 'newest',
+    value: 'newest',
+    fields: [
+  {
+    "id": "1",
+    "label": "attachmentss",
+    "type": "file",
+    "required": true,
+    "multiple": true
+  }
+],
+    api: {
+      endpoint: 'https://dev.felidae.network/api/gemini/code_generation',
+      payloadType: 'multipart',
+      responsePath: 'data.code',
+      responseExample: '{\n  "status": true,\n  "data": {\n    "code": "```html\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Simple HTML</title>\n</head>\n<body>\n    <div>\n        <h1>Hello, World!</h1>\n        <p>This is a simple HTML example.</p>\n    </div>\n</body>\n</html>\n```"\n  },\n  "timestamp": "2025-06-13T08:42:18+00:00"\n}',
+      mainPayloadField: 'prompt',
+      mainPayloadFieldType: 'string',
+      payloadFields: [
+  {
+    "type": "string",
+    "sourceType": "static",
+    "name": " model",
+    "source": "gemini-1.5-pro"
+  },
+  {
+    "type": "string",
+    "sourceType": "static",
+    "name": "max_tokens",
+    "source": "200"
+  },
+  {
+    "type": "string",
+    "sourceType": "static",
+    "name": "temperature",
+    "source": "0.7"
+  },
+  {
+    "type": "array",
+    "sourceType": "input",
+    "name": "attachments",
+    "source": "1"
+  }
+],
+      payload: (formData: Record<string, any>) => {
+        const payload: Record<string, any> = {};
+        payload['prompt'] = '';
+        payload[' model'] = 'gemini-1.5-pro';
+        payload['max_tokens'] = '200';
+        payload['temperature'] = '0.7';
+        payload['attachments'] = formData['1'];
         return payload;
       }
     }

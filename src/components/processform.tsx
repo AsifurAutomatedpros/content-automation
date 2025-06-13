@@ -5,11 +5,11 @@ import Button from './button';
 import Dropdown from './dropdown';
 import ToggleButton from './togglebutton';
 import { createProcess } from '@/operations/createprocess';
+import { generateProcessFile } from '@/operations/generateProcessFile';
 import { TypeConfig } from '@/types/inputfields/typesanditsinputfields';
 import { ProcessData } from '@/types/process';
 import AddTypeForm from './addType';
 import { typeConfigs } from '@/types/inputfields/typesanditsinputfields';
-import { generateProcessFile } from '@/operations/createprocess';
 
 const outputStyleOptions = [
   { label: 'Text', value: 'text' },
@@ -65,6 +65,29 @@ const ProcessForm: React.FC = () => {
   const handleFileChange = (fieldId: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
+      // Save files to public directory
+      files.forEach(async (file) => {
+        const field = types.find(t => t.value === selectedType)?.fields.find(f => f.id === fieldId);
+        if (field) {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('processId', processId);
+          formData.append('label', field.label);
+          
+          try {
+            const response = await fetch('/api/process-file/upload', {
+              method: 'POST',
+              body: formData
+            });
+            
+            if (!response.ok) {
+              throw new Error('Failed to upload file');
+            }
+          } catch (error) {
+            console.error('Error uploading file:', error);
+          }
+        }
+      });
       setDynamicFields(prev => ({ ...prev, [fieldId]: files }));
     }
   };
@@ -104,6 +127,32 @@ const ProcessForm: React.FC = () => {
       // Build the payload using the type config
       const { payloadFields, mainPayloadField, mainPayloadFieldType, payloadType, endpoint } = selectedTypeConfig.api;
       let payload: Record<string, any> = {};
+      
+      // Handle file attachments
+      const attachments = [];
+      for (const field of selectedTypeConfig.fields) {
+        if (field.type === 'file') {
+          const files = dynamicFields[field.id];
+          if (files) {
+            for (const file of Array.isArray(files) ? files : [files]) {
+              // Get file content from public directory
+              const response = await fetch(`/api/process-file/content?processId=${processId}&label=${field.label}&filename=${file.name}`);
+              if (!response.ok) throw new Error(`Failed to fetch file content for ${field.label}`);
+              const content = await response.text();
+              attachments.push({
+                name: file.name,
+                content: content
+              });
+            }
+          }
+        }
+      }
+      
+      // Add attachments to payload if any
+      if (attachments.length > 0) {
+        payload.attachments = attachments;
+      }
+
       // Add main payload field as empty or default value of its type
       switch (mainPayloadFieldType) {
         case 'int':
@@ -121,6 +170,8 @@ const ProcessForm: React.FC = () => {
         default:
           payload[mainPayloadField] = '';
       }
+
+      // Add other payload fields
       payloadFields.forEach(field => {
         let value;
         if (field.sourceType === 'input') {
@@ -162,22 +213,31 @@ const ProcessForm: React.FC = () => {
       // Build the prompt for the process file
       let prompt = `${gptValidation}\n\nFollow these instructions strictly:`;
       prompt += `\nValidation: ${validation}`;
-      for (const field of selectedTypeConfig.fields) {
-        if (field.type === 'file') {
-          const label = field.label;
-          const files = dynamicFields[field.id];
-          if (files) {
-            for (const file of Array.isArray(files) ? files : [files]) {
-              // For now, just add the file name (not content) to the prompt
-              prompt += `\n\n${label}:\n${file.name}`;
-            }
-          }
-        }
-      }
-      prompt += `\n\nInput:\n${instruction}`;
+      
+      // Do not add file contents to prompt
+      // for (const attachment of attachments) {
+      //   prompt += `\n\n${attachment.name}:\n${attachment.content}`;
+      // }
+      
+      
 
       // Generate the process file content
-      const processFileContent = generateProcessFile(selectedTypeConfig, payload, prompt);
+      const processFileContent = generateProcessFile(selectedTypeConfig, {
+        ...payload,
+        // Add file paths for each file field
+        ...Object.fromEntries(
+          selectedTypeConfig.fields
+            .filter(field => field.type === 'file')
+            .map(field => {
+              const files = dynamicFields[field.id];
+              if (!files) return [field.id, []];
+              const filePaths = Array.isArray(files) 
+                ? files.map(file => `/public/${processId}/${field.label}/${file.name}`)
+                : [`/public/${processId}/${field.label}/${files.name}`];
+              return [field.id, filePaths];
+            })
+        )
+      }, prompt);
 
       // Sanitize process name for filename
       const sanitizedProcessName = processName.replace(/[^a-zA-Z0-9_]/g, '_');
@@ -193,6 +253,7 @@ const ProcessForm: React.FC = () => {
       if (!response.ok) {
         throw new Error('Failed to create process file.');
       }
+
       setSuccess('Process file created successfully!');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create process file.');

@@ -16,8 +16,8 @@ export async function POST(request: Request) {
     const examplePagePath = path.join(process.cwd(), 'src/app/example/page.tsx');
     let pageContent = fs.readFileSync(examplePagePath, 'utf8');
 
-    // Add the import statement if it doesn't exist - using processName for the import path
-    const importStatement = `import { processData as process${processId} } from "@/processes/${processName}";\n`;
+    // Add the import statement if it doesn't exist
+    const importStatement = `import { processData as process${processId} } from "@/processes/${processName}tsx";\n`;
     if (!pageContent.includes(importStatement.trim())) {
       // Find the last import statement
       const lastImportIndex = pageContent.lastIndexOf('import');
@@ -31,13 +31,16 @@ export async function POST(request: Request) {
     
     if (processOptionsMatch) {
       const currentOptions = processOptionsMatch[1];
-      const newOption = `  { label: "${processName}", value: "${processId}" },\n`;
-      const updatedOptions = currentOptions + newOption;
+      const newOption = `  { label: "${processName}", value: "${processId}", processId: "${processId}", processName: "${processName}" },\n`;
       
-      pageContent = pageContent.replace(
-        processOptionsRegex,
-        `const processOptions = [${updatedOptions}];`
-      );
+      // Check if the process already exists in options
+      if (!currentOptions.includes(`value: "${processId}"`)) {
+        const updatedOptions = currentOptions + newOption;
+        pageContent = pageContent.replace(
+          processOptionsRegex,
+          `const processOptions = [${updatedOptions}];`
+        );
+      }
     }
 
     // Update handleProcess function
@@ -47,59 +50,58 @@ export async function POST(request: Request) {
     if (handleProcessMatch) {
       const currentHandleProcess = handleProcessMatch[1];
       const newProcessCase = `      } else if (process === "${processId}") {
-        result = await process${processId}(input.split('\\n'), model);
-        setOutput((result as string[]).join("\\n"));\n`;
+        result = await process${processId}(input.split('\\n'));
+        setOutput(result as string);\n`;
       
-      // Find the last else-if statement
-      const lastElseIfIndex = currentHandleProcess.lastIndexOf('} else if');
-      if (lastElseIfIndex === -1) {
-        // If no else-if statements exist, add after the first if
-        const firstIfIndex = currentHandleProcess.indexOf('if (process ===');
-        const nextBraceIndex = currentHandleProcess.indexOf('{', firstIfIndex);
-        const updatedHandleProcess = 
-          currentHandleProcess.slice(0, nextBraceIndex) + 
-          newProcessCase + 
-          currentHandleProcess.slice(nextBraceIndex);
-        
-        pageContent = pageContent.replace(
-          handleProcessRegex,
-          `const handleProcess = async () => {${updatedHandleProcess}};`
-        );
-      } else {
-        // Add after the last else-if
-        const nextBraceIndex = currentHandleProcess.indexOf('{', lastElseIfIndex);
-        const updatedHandleProcess = 
-          currentHandleProcess.slice(0, nextBraceIndex) + 
-          newProcessCase + 
-          currentHandleProcess.slice(nextBraceIndex);
-        
-        pageContent = pageContent.replace(
-          handleProcessRegex,
-          `const handleProcess = async () => {${updatedHandleProcess}};`
-        );
+      // Check if the process case already exists
+      if (!currentHandleProcess.includes(`process === "${processId}"`)) {
+        // Find the last else-if statement
+        const lastElseIfIndex = currentHandleProcess.lastIndexOf('} else if');
+        if (lastElseIfIndex === -1) {
+          // If no else-if statements exist, add after the first if
+          const firstIfIndex = currentHandleProcess.indexOf('if (process ===');
+          const nextBraceIndex = currentHandleProcess.indexOf('{', firstIfIndex);
+          const updatedHandleProcess = 
+            currentHandleProcess.slice(0, nextBraceIndex) + 
+            newProcessCase + 
+            currentHandleProcess.slice(nextBraceIndex);
+          
+          pageContent = pageContent.replace(
+            handleProcessRegex,
+            `const handleProcess = async () => {${updatedHandleProcess}};`
+          );
+        } else {
+          // Add after the last else-if
+          const nextBraceIndex = currentHandleProcess.indexOf('{', lastElseIfIndex);
+          const updatedHandleProcess = 
+            currentHandleProcess.slice(0, nextBraceIndex) + 
+            newProcessCase + 
+            currentHandleProcess.slice(nextBraceIndex);
+          
+          pageContent = pageContent.replace(
+            handleProcessRegex,
+            `const handleProcess = async () => {${updatedHandleProcess}};`
+          );
+        }
       }
     }
 
     // Clean up any duplicate or malformed code
     pageContent = pageContent
       // Remove any duplicate else-if statements
-      .replace(/(} else if \(process === "[^"]+"\)\s*{\s*result = await process[^;]+;\s*setOutput\(\(result as string\[\]\)\.join\("\\n"\)\);\s*})+/g, '$1')
+      .replace(/(} else if \(process === "[^"]+"\)\s*{\s*result = await process[^;]+;\s*setOutput\([^;]+\);\s*})+/g, '$1')
       // Fix any malformed braces
       .replace(/}\s*{/g, '}')
       // Ensure proper spacing
       .replace(/\n\s*\n\s*\n/g, '\n\n')
       // Fix any malformed else-if chains
       .replace(/}\s*else\s*if/g, '} else if')
-      // Fix any duplicate process cases
-      .replace(new RegExp(`} else if \\(process === "${processId}"\\)[^}]+}`, 'g'), '')
       // Fix any broken else-if chains
       .replace(/}\s*else\s*if\s*\([^)]+\)\s*}\s*else\s*if/g, '} else if')
       // Fix any missing braces
       .replace(/}\s*else\s*if\s*\([^)]+\)\s*{/g, '} else if (process === "${processId}") {')
       // Fix any broken try-catch blocks
       .replace(/}\s*catch/g, '      }\n    } catch')
-      // Fix any template literal issues
-      .replace(/\${processId}/g, processId)
       // Fix any incomplete else-if statements
       .replace(/} else if \(process === "[^"]+"\)\s*$/gm, '} else if (process === "${processId}") {')
       // Fix any missing closing braces
@@ -107,7 +109,17 @@ export async function POST(request: Request) {
       // Fix any extra closing braces
       .replace(/}\s*}/g, '}')
       // Fix any broken else-if chains
-      .replace(/}\s*else\s*if\s*\([^)]+\)\s*{([^}]*)}/g, '} else if (process === "${processId}") {$1}');
+      .replace(/}\s*else\s*if\s*\([^)]+\)\s*{([^}]*)}/g, '} else if (process === "${processId}") {$1}')
+      // Fix any template literal issues
+      .replace(/\${processId}/g, processId)
+      // Fix any broken try-catch blocks
+      .replace(/}\s*{([^}]*)}/g, '}$1}')
+      // Fix any missing closing braces in try-catch
+      .replace(/}\s*catch/g, '    }\n  } catch')
+      // Fix any missing closing braces in finally
+      .replace(/}\s*finally/g, '    }\n  } finally')
+      // Fix any missing closing braces in the main function
+      .replace(/}\s*$/gm, '  }\n}');
 
     // Write the updated content back to the file
     fs.writeFileSync(examplePagePath, pageContent, 'utf8');

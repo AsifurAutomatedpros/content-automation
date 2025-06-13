@@ -46,7 +46,19 @@ export async function POST(request: Request) {
         if (field.sourceType === 'input') {
           return `payload['${field.name}'] = formData['${field.source}'];`;
         } else {
-          return `payload['${field.name}'] = '${field.source}';`;
+          // Handle different types of static values
+          switch (field.type) {
+            case 'float':
+              return `payload['${field.name}'] = ${parseFloat(field.source)};`;
+            case 'int':
+              return `payload['${field.name}'] = ${parseInt(field.source, 10)};`;
+            case 'boolean':
+              return `payload['${field.name}'] = ${field.source === 'true'};`;
+            case 'array':
+              return `payload['${field.name}'] = ${JSON.stringify(field.source.split(',').map((v: string) => v.trim()))};`;
+            default:
+              return `payload['${field.name}'] = '${field.source}';`;
+          }
         }
       })
       .join('\n        ');
