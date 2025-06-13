@@ -270,4 +270,47 @@ export const typeConfigs: TypeConfig[] = [
       }
     }
   }
+,
+  {
+    id: '6613',
+    label: 'gemini',
+    value: 'gemini',
+    fields: [],
+    api: {
+      endpoint: 'https://dev.felidae.network/api/gemini/text_generation',
+      payloadType: 'json',
+      responsePath: 'generated_text',
+      responseExample: '{\n  "generated_text": "Sir Gideon, the last of the Gryphon Knights, squinted at the plume of smoke rising from Oakhaven. His armor, once gleaming silver, was now dull with the dust of a hundred leagues. He\'d been chasing the beast for weeks, ever since it descended upon the valley, scorching fields and demanding tribute.  His horse, Valiant, snorted nervously, sensing the menace ahead.\n\nOakhaven was a charnel house. Homes were reduced to smoldering timbers.  A single terrified villager cowered behind a well, pointing a trembling finger towards a jagged peak overlooking the village.  Perched atop it, a magnificent yet terrible creature basked in the afternoon sun. Its scales shimmered like a thousand emeralds, and smoke curled from its nostrils.  The dragon.\n\nFear coiled in Gideon\'s gut, but duty quelled it. He dismounted, the clang of his armor ringing in the unnatural silence.  \"Where are the others?\" he asked the villager, his voice rough.\n\n\"Taken!\" the man croaked. \"Into the cave! The dragon... it takes the strongest... as... as sacrifices!\"\n\nGideon\'s jaw tightened. He knew what he had to do.  He drew his sword, Dawnbringer, its blade whispering with ancient magic. \"Show me the cave,\" he commanded.\n\nThe cave mouth gaped like a maw, reeking of sulphur and fear. Gideon, ignoring the tremors that shook the ground, strode in. The air grew hot and thick. The dragon\'s hoard, a glittering mountain of gold and jewels, lay scattered across the cave floor.  And chained to the far wall, he saw them – the villagers, their faces pale with terror.\n\nThe dragon uncoiled itself, its eyes burning like embers.  \"Another morsel?\" it boomed, its voice a rumble of thunder. \"You knights are so predictable.  Bravery is such a tedious appetizer.\"\n\n\"They are not your food!\" Gideon roared, his voice echoing in the cavern.  He charged, Dawnbringer flashing.\n\nThe dragon lunged, its claws raking the air. Gideon rolled beneath the attack, feeling the heat of its breath scorch his back.  He slashed at the dragon\'s flank, drawing a hiss of pain and a spray of emerald blood.  Enraged, the dragon unleashed a torrent of flame, but Gideon, anticipating the attack, had already taken cover behind a fallen stalactite.\n\nThe battle raged.  Gideon, smaller and quicker, dodged and weaved, landing blow after blow. The dragon, though powerful, was hampered by the confines of the cave.  Finally, seeing an opening, Gideon darted forward and plunged Dawnbringer deep into the dragon\'s underbelly.\n\nA roar of agony echoed through the cave as the dragon thrashed, its movements growing weaker. With a final shudder, it collapsed, its emerald scales dulling as life ebbed away.\n\nSilence descended upon the cave, broken only by the whimpers of the freed villagers.  Gideon, leaning heavily on Dawnbringer, watched as they rushed to embrace their families.  He had saved them.  He had slain the dragon.  He was, after all, a Gryphon Knight.  And bravery, he thought, was sometimes its own reward.\n"\n}',
+      mainPayloadField: 'prompt',
+      mainPayloadFieldType: 'string',
+      payloadFields: [
+  {
+    "type": "string",
+    "sourceType": "static",
+    "name": "model",
+    "source": "gemini-1.5-pro"
+  },
+  {
+    "type": "string",
+    "sourceType": "static",
+    "name": "max_tokens",
+    "source": "200"
+  },
+  {
+    "type": "string",
+    "sourceType": "static",
+    "name": "temperature",
+    "source": "0.7"
+  }
+],
+      payload: (formData: Record<string, any>) => {
+        const payload: Record<string, any> = {};
+        payload['prompt'] = '';
+        payload['model'] = 'gemini-1.5-pro';
+        payload['max_tokens'] = '200';
+        payload['temperature'] = '0.7';
+        return payload;
+      }
+    }
+  }
 ];

@@ -125,10 +125,6 @@ const AddTypeForm: React.FC<AddTypeFormProps> = ({ onClose, onAddType, setSelect
       setError('Payload Type is required.');
       return;
     }
-    if (fields.length === 0) {
-      setError('Please add at least one input field.');
-      return;
-    }
     if (!mainPayloadField.trim()) {
       setError('Main Payload Field Name is required.');
       return;

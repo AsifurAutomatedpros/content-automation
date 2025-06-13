@@ -46,7 +46,7 @@ export const processData = async (
   try {
     const inputText = inputLines.join("\\n");
     // Prepare the prompt
-    const generatedPrompt = "${escapedPrompt}";
+    const generatedPrompt = "${escapedPrompt}" + inputText;
     // Prepare payload
     const payload = { ${payloadFieldAssignments}${payloadFieldAssignments ? ', ' : ''}${JSON.stringify(mainField)}: generatedPrompt };
     // Make API call
@@ -140,7 +140,7 @@ export const createProcess = async ({ endpoint, payload, headers, payloadType, t
         }
       }
     }
-    prompt += `\n\nInput:\n${userInput}`;
+    prompt += `\n\nInput:{{$inputText}}\n`;
 
     // Set main payload field to prompt
     payload[typeConfig.api.mainPayloadField] = prompt;

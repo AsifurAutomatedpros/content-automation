@@ -6,6 +6,8 @@ import { metaTagSearch } from "@/processes/MetaTagSearch";
 import { processData as keywordFinal } from "@/processes/keyword Final";
 import { Process as GptCode5Process, processData as gptCode5ProcessData } from '@/processes/GptCode5tsx';
 import { Process as NewProUltraProcess, processData as newProUltraProcessData } from '@/processes/new_pro_ultratsx';
+import { processData as geminiStoryProcessData } from '@/processes/gemini_story_generationtsx';
+import { processData as geminiStory2ProcessData } from '@/processes/gemini_story_generation2tsx';
 
 
 const modelOptions = [
@@ -22,6 +24,8 @@ const processOptions = [
   { label: "sometimes", value: "819931" },
   { label: "GptCode5", value: "gptcode5" },
   { label: "New Pro Ultra", value: "new_pro_ultratsx" },
+  { label: "Gemini Story Generation", value: "gemini-story" },
+  { label: "Gemini Story Generation 2", value: "gemini-story-2" },
 ];
 
 type ModelType = 'gpt-4.1' | 'gpt-4.1-nano';
@@ -59,6 +63,12 @@ export default function ExamplePage() {
       } else if (process === "new_pro_ultratsx") {
         result = await newProUltraProcessData(input.split('\n'));
         setOutput(typeof result === 'string' ? result : JSON.stringify(result));
+      } else if (process === "gemini-story") {
+        result = await geminiStoryProcessData(input.split('\n'));
+        setOutput(result as string);
+      } else if (process === "gemini-story-2") {
+        result = await geminiStory2ProcessData(input.split('\n'));
+        setOutput(result as string);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
