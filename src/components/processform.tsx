@@ -111,8 +111,6 @@ const ProcessForm: React.FC = () => {
     setSuccess(null);
     try {
       if (!processName.trim()) throw new Error('Process name is required');
-      if (!gptValidation.trim()) throw new Error('LLM instruction is required');
-      if (!validation.trim()) throw new Error('LLM Validation is required');
 
       const selectedTypeConfig = types.find(t => t.value === selectedType);
       if (!selectedTypeConfig) throw new Error('Invalid type selected');
@@ -141,7 +139,8 @@ const ProcessForm: React.FC = () => {
               const content = await response.text();
               attachments.push({
                 name: file.name,
-                content: content
+                content: content,
+                path: `/public/${processId}/${field.label}/${file.name}`
               });
             }
           }
@@ -192,7 +191,18 @@ const ProcessForm: React.FC = () => {
             }
             break;
           case 'file':
-            // leave as is (should be File or File[])
+            // For file fields, use the field label as the key and the file paths as the value
+            const fileField = selectedTypeConfig.fields.find(f => f.id === field.source);
+            if (fileField) {
+              const files = dynamicFields[field.source];
+              if (files) {
+                value = Array.isArray(files) 
+                  ? files.map(file => `/public/${processId}/${fileField.label}/${file.name}`)
+                  : [`/public/${processId}/${fileField.label}/${files.name}`];
+              } else {
+                value = [];
+              }
+            }
             break;
           default:
             value = String(value);
@@ -201,8 +211,16 @@ const ProcessForm: React.FC = () => {
       });
 
       // Build the prompt for the process file
-      let prompt = `\n\nFollow these instructions strictly:${gptValidation}`;
-      prompt += `\nValidation: ${validation}\n\nMain Input:\n`;
+      let prompt = '';
+      if (gptValidation.trim()) {
+        prompt += `\n\nFollow these instructions strictly:${gptValidation}`;
+      }
+      if (validation.trim()) {
+        prompt += `\nValidation: ${validation}`;
+      }
+      if (prompt) {
+        prompt += '\n\nMain Input:\n';
+      }
 
       // Generate the process file content
       const processFileContent = generateProcessFile(selectedTypeConfig, {
@@ -241,6 +259,7 @@ const ProcessForm: React.FC = () => {
       formData.append('outputStyle', outputStyle);
       formData.append('processFileContent', processFileContent);
       formData.append('type', selectedType);
+      formData.append('payloadType', payloadType || 'json');
 
       // Add knowledge base and schema tool files if they exist
       if (dynamicFields.knowledgeBase) {

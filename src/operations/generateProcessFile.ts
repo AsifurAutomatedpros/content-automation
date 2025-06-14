@@ -12,6 +12,7 @@ interface TypeConfig {
     }>;
     endpoint: string;
     payloadType: string;
+    method: string;
   };
   fields?: Array<{
     id: string;
@@ -71,7 +72,12 @@ const FILE_DIRECTORY = "";`;
         return `${JSON.stringify(field.name)}: ${field.name.toUpperCase()}_PATHS`;
       }
       if (field.sourceType === 'input') {
-        return `${JSON.stringify(field.name)}: ${JSON.stringify(formData[field.source])}`;
+        const value = formData[field.source];
+        // Ensure file fields are always arrays
+        if (field.type === 'file') {
+          return `${JSON.stringify(field.name)}: ${Array.isArray(value) ? JSON.stringify(value) : JSON.stringify([value])}`;
+        }
+        return `${JSON.stringify(field.name)}: ${JSON.stringify(value)}`;
       } else {
         // Handle static values
         switch (field.type) {
@@ -110,7 +116,7 @@ const FILE_DIRECTORY = "";`;
       const isFileArray = fileFields.some((f: { name: string; type: string }) => f.name === field.name && f.type === 'array');
       const type = isFileArray ? 'string[]' : 
                   field.type === 'array' ? 'string[]' : 
-                  field.type === 'file' ? 'string[]' :
+                  field.type === 'file' ? 'string[]' : // Always make file fields string[]
                   field.type === 'int' ? 'number' :
                   field.type === 'float' ? 'number' :
                   field.type === 'boolean' ? 'boolean' :
@@ -121,9 +127,15 @@ const FILE_DIRECTORY = "";`;
   }
 
   // Type for API payload that can be either ProcessPayload or FormData
-  type ApiPayload = ProcessPayload | FormData;`;
+  type ApiPayload = ProcessPayload | FormData;
 
-  return `"use client";
+  // Define payload type as a union type
+  type PayloadType = 'json' | 'multipart';
+
+  // Helper function to check payload type
+  const isMultipartPayload = (type: PayloadType): type is 'multipart' => type === 'multipart';`;
+
+  const template = `"use client";
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import Output from '@/components/output';
@@ -137,13 +149,31 @@ interface ProcessProps {
   inputText: string;
 }
 
+interface FileField {
+  name: string;
+  type: string;
+  source: string;
+  sourceType: string;
+  label?: string;
+}
+
+interface FileFieldConfig {
+  field: FileField;
+  config?: {
+    id: string;
+    label: string;
+    type: string;
+    required?: boolean;
+  };
+}
+
 // Store processId and file information as constants
 const PROCESS_ID = "${processId}";
 const PROCESS_NAME = "${processName}";
 const PROCESS_TYPE = "${type}";
 const TYPE_ID = "${typeId}";
-const FILE_FIELDS = ${JSON.stringify(fileFields, null, 2)};
-const FILE_FIELD_CONFIGS = ${JSON.stringify(fileFieldConfigs, null, 2)};
+const FILE_FIELDS: FileField[] = ${JSON.stringify(fileFields, null, 2)};
+const FILE_FIELD_CONFIGS: FileFieldConfig[] = ${JSON.stringify(fileFieldConfigs, null, 2)};
 ${filePathConstants}
 
 ${payloadTypeInterface}
@@ -154,14 +184,17 @@ export const processData = async (
   try {
     const inputText = inputLines.join("\\n");
     // Prepare the prompt
-    const generatedPrompt = "${escapedPrompt}" + inputText;
+    const generatedPrompt = ${prompt ? `"${escapedPrompt}" + inputText` : 'inputText'};
 
     let apiPayload: ApiPayload;
 
     // Construct the base payload object first, to easily access values for FormData or JSON
     const basePayload: ProcessPayload = { ${payloadFieldAssignments}${payloadFieldAssignments ? ', ' : ''}${JSON.stringify(mainField)}: generatedPrompt };
 
-    if ('${typeConfig.api.payloadType}' === 'multipart') {
+    // Set payload type from config
+    const payloadType: PayloadType = '${typeConfig.api.payloadType}' as PayloadType;
+
+    if (isMultipartPayload(payloadType)) {
       const formData = new FormData();
 
       // Append all non-file fields from the basePayload to FormData
@@ -176,42 +209,47 @@ export const processData = async (
         }
       });
 
-      // Process each file field and append to FormData
-      ${fileFields.map(field => `
-      if (${field.name.toUpperCase()}_PATHS.length > 0) {
-        await Promise.all(
-          ${field.name.toUpperCase()}_PATHS.map(async (filePath: string, index: number) => {
-            const response = await fetch('/api/process-file/content?processId=' + PROCESS_ID + '&label=' + (FILE_FIELD_CONFIGS.find(ffc => ffc.field.name === '${field.name}')?.config?.label || '') + '&filename=' + ${field.name.toUpperCase()}_NAMES[index]);
-            if (!response.ok) throw new Error("Failed to fetch file content for " + ${field.name.toUpperCase()}_NAMES[index]);
-            const content = await response.text();
-            const blob = new Blob([content], { type: 'text/plain' });
-            formData.append('${field.name}[]', blob, ${field.name.toUpperCase()}_NAMES[index]);
-          })
-        );
-      } else {
-        // If no attachments, append an empty blob to ensure the field is present as an array
-        formData.append('${field.name}[]', new Blob([]), '');
-      }`).join('\n')}
+      // Append file fields to FormData
+      await Promise.all(FILE_FIELDS.map(async field => {
+        const filePaths = basePayload[field.name as keyof ProcessPayload];
+        if (Array.isArray(filePaths)) {
+          await Promise.all(filePaths.map(async path => {
+            const fileName = path.split('/').pop();
+            if (fileName) {
+              // Fetch the file content from the server
+              const fieldConfig = FILE_FIELD_CONFIGS.find(fc => fc.field.name === field.name);
+              const response = await fetch(\`/api/process-file/content?processId=\${PROCESS_ID}&label=\${fieldConfig?.config?.label || field.name}&filename=\${fileName}\`);
+              if (!response.ok) throw new Error(\`Failed to fetch file content for \${fileName}\`);
+              const content = await response.text();
+              
+              // Create a proper File object with the content
+              const blob = new Blob([content], { type: 'text/plain' });
+              formData.append(\`\${field.name}[]\`, blob, fileName);
+            }
+          }));
+        }
+      }));
+
       apiPayload = formData;
     } else {
-      // For JSON payloads, the basePayload is the apiPayload
       apiPayload = basePayload;
     }
 
-    // Make API call
-    const response = await axios.post(
-      '${typeConfig.api.endpoint}',
-      apiPayload,
-      { 
-        headers: { 
-          'Content-Type': '${typeConfig.api.payloadType === 'multipart' ? 'multipart/form-data' : 'application/json'}'
-        }, 
-        timeout: 60000 
+    // Make the API call with the appropriate method
+    const response = await axios({
+      method: '${typeConfig.api.method}',
+      url: '${typeConfig.api.endpoint}',
+      ${typeConfig.api.method === 'GET' ? 'params' : 'data'}: apiPayload,
+      headers: isMultipartPayload(payloadType) ? {
+        'Content-Type': 'multipart/form-data'
+      } : {
+        'Content-Type': 'application/json'
       }
-    );
-    // Extract output using responsePath
-    const output = response.data${responsePath};
-    return output;
+    });
+
+    // Extract the response data using the configured path
+    const responseData = response.data${responsePath};
+    return responseData;
   } catch (error) {
     console.error('Error processing data:', error);
     throw error;
@@ -250,4 +288,6 @@ export const Process: React.FC<ProcessProps> = ({
 };
 
 export default Process;`;
+
+  return template;
 };

@@ -34,7 +34,7 @@ export const createProcess = async ({ endpoint, payload, headers, payloadType, t
   endpoint: string;
   payload: any;
   headers: any;
-  payloadType: string;
+  payloadType: 'json' | 'multipart';
   typeConfig: TypeConfig;
   dynamicFields: Record<string, any>;
   gptValidation: string;
@@ -100,7 +100,7 @@ export const createProcess = async ({ endpoint, payload, headers, payloadType, t
 
     // Make the API call
     const response = await fetch(endpoint, {
-      method: 'POST',
+      method: typeConfig.api.method,
       headers: payloadType === 'multipart' ? undefined : headers,
       body: apiPayload,
     });

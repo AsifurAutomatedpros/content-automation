@@ -5,6 +5,7 @@ export interface TypeConfig {
   fields: InputField[];
   api: {
     endpoint: string;
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE';
     payloadType: string;
     responsePath: string;
     responseExample?: string;
@@ -57,6 +58,7 @@ export const typeConfigs: TypeConfig[] = [
     ],
     api: {
       endpoint: '/api/process/document',
+      method: 'POST',
       payloadType: 'json',
       responsePath: '/api/process/document',
       responseExample: 'Example response path',
@@ -98,6 +100,7 @@ export const typeConfigs: TypeConfig[] = [
     ],
     api: {
       endpoint: '/api/process/summary',
+      method: 'POST',
       payloadType: 'json',
       responsePath: '/api/process/summary',
       responseExample: 'Example response path',
@@ -139,6 +142,7 @@ export const typeConfigs: TypeConfig[] = [
     ],
     api: {
       endpoint: '/api/process/analysis',
+      method: 'POST',
       payloadType: 'json',
       responsePath: '/api/process/analysis',
       responseExample: 'Example response path',
@@ -157,138 +161,147 @@ export const typeConfigs: TypeConfig[] = [
       }
     }
   },
-  
-   { id: '1940',
-    label: 'GPT Code',
-    value: 'code',
-    fields: [
-      {
-        id: 'description',
-        label: 'Code Description',
-        type: 'text',
-        required: true,
-        placeholder: 'Enter code description'
-      },
-      {
-        id: 'attachment',
-        label: 'Attachment',
-        type: 'file',
-        required: true,
-        accept: '.txt,.js,.ts,.jsx,.tsx',
-        multiple: false
-      }
-    ],
+  {
+    id: '8379',
+    label: 'pexel video',
+    value: 'pexel video',
+    fields: [],
     api: {
-      endpoint: '/api/process/code',
-      payloadType: 'multipart',
-      responsePath: 'data.data.code',
-      responseExample: '{"message": "Code generation successful.", "data": {"status": true, "data": {"code": "example code"}, "timestamp": "2025-06-11T10:46:10+00:00"}}',
-      mainPayloadField: 'description',
+      endpoint: 'https://dev.felidae.network/api/pexels/videos/search',
+      method: 'GET',
+      payloadType: 'json',
+      responsePath: 'videos',
+      responseExample: '{\n  "url": "https://api-server.pexels.com/search/videos/dog/",\n  "videos": [\n    {\n      "id": 3191251,\n      "width": 4096,\n      "height": 2160,\n      "url": "https://www.pexels.com/video/boy-playing-with-his-dog-3191251/",\n      "type": null,\n      "image": "https://images.pexels.com/videos/3191251/free-video-3191251.jpg?auto=compress&cs=tinysrgb&fit=crop&h=630&w=1200",\n      "duration": 13,\n      "user": {\n        "id": 1583460,\n        "name": "Pressmaster",\n        "url": "https://www.pexels.com/@pressmaster"\n      },',
+      mainPayloadField: 'query',
       mainPayloadFieldType: 'string',
       payloadFields: [
-        { name: 'description', type: 'string', sourceType: 'input', source: 'description' },
-        { name: 'attachment', type: 'file', sourceType: 'input', source: 'attachment' }
+        {
+          "type": "string",
+          "sourceType": "static",
+          "name": "orientation",
+          "source": "landscape"
+        },
+        {
+          "type": "string",
+          "sourceType": "static",
+          "name": "size",
+          "source": "medium"
+        },
+        {
+          "type": "string",
+          "sourceType": "static",
+          "name": "locale",
+          "source": "en-US"
+        },
+        {
+          "type": "string",
+          "sourceType": "static",
+          "name": "page",
+          "source": "1"
+        }
       ],
       payload: (formData: Record<string, any>) => {
         const payload: Record<string, any> = {};
-        payload['description'] = '';
-        payload['attachment'] = formData.attachment;
+        payload['query'] = '';
+        payload['orientation'] = 'landscape';
+        payload['size'] = 'medium';
+        payload['locale'] = 'en-US';
+        payload['page'] = '1';
         return payload;
       }
     }
   },
   {
-    id: '7618',
-    label: 'newset gpt22222',
-    value: 'newset gpt22222',
-    fields: [
-  {
-    "id": "1",
-    "label": "attachments",
-    "type": "file",
-    "required": true,
-    "multiple": true
-  }
-],
-    api: {
-      endpoint: 'https://dev.felidae.network/api/chatgpt/code_generation',
-      payloadType: 'multipart',
-      responsePath: 'data.data.code',
-      responseExample: '{\n  "message": "Code generation successful.",\n  "data": {\n    "status": true,\n    "data": {\n      "code": "```tsx\n\"use client\";\n\nimport React, { useState } from \"react\";\nimport { cn } from \"@/lib/utils\";\nimport { Avatar } from \"./ui/avatar\";\nimport Icon from \"./icon/Icon\";\nimport { typography } from \"@/app/styles/typography\";\nimport SimpleButton from \"./ui/simple-button\";\nimport { IconicButton } from \"./IconicButton\";\nimport { EditNameModal } from \"./EditNameModal\";\nimport { ChangePasswordModal } from \"./ChangePasswordModal\";\nimport { VerifyPhoneNumberModal } from \"./VerifyPhoneNumberModal\";\nimport { useRouter } from \"next/navigation\";\nimport { Modal } from \"./ui/modal\";\nimport { Button } from \"./ui/button\";\nimport { PhoneNumberInput } from \"./PhoneNumberInput\";\nimport { countries } from \'./ui/CountryList\';\n\nexport interface ProfileProps {\n  name: string;\n  email: string;\n  phone: string;\n  profileImage?: string;\n  showAvatarEdit?: boolean;\n  password:"\n    },\n    "timestamp": "2025-06-11T10:46:10+00:00"\n  }\n}',
-      mainPayloadField: 'description',
-      mainPayloadFieldType: 'string',
-      payloadFields: [
-  {
-    "type": "array",
-    "sourceType": "input",
-    "name": "attachments",
-    "source": "1"
-  }
-],
-      payload: (formData: Record<string, any>) => {
-        const payload: Record<string, any> = {};
-        payload['description'] = '';
-        payload['attachments'] = formData['1'];
-        return payload;
-      }
-    }
-  }
-,
-  {
-    id: '7155',
-    label: 'gpt example',
-    value: 'gpt example',
-    fields: [
-  {
-    "id": "1",
-    "label": "attachments",
-    "type": "file",
-    "required": true,
-    "multiple": true
-  }
-],
-    api: {
-      endpoint: 'https://dev.felidae.network/api/chatgpt/code_generation',
-      payloadType: 'multipart',
-      responsePath: 'data.data.code',
-      responseExample: '{\n  "message": "Code generation successful.",\n  "data": {\n    "status": true,\n    "data": {\n      "code": "```tsx\n\"use client\";\n\nimport React, { useState } from \"react\";\nimport { cn } from \"@/lib/utils\";\nimport { Avatar } from \"./ui/avatar\";\nimport Icon from \"./icon/Icon\";\nimport { typography } from \"@/app/styles/typography\";\nimport SimpleButton from \"./ui/simple-button\";\nimport { IconicButton } from \"./IconicButton\";\nimport { EditNameModal } from \"./EditNameModal\";\nimport { ChangePasswordModal } from \"./ChangePasswordModal\";\nimport { VerifyPhoneNumberModal } from \"./VerifyPhoneNumberModal\";\nimport { useRouter } from \"next/navigation\";\nimport { Modal } from \"./ui/modal\";\nimport { Button } from \"./ui/button\";\nimport { PhoneNumberInput } from \"./PhoneNumberInput\";\nimport { countries } from \'./ui/CountryList\';\n\nexport interface ProfileProps {\n  name: string;\n  email: string;\n  phone: string;\n  profileImage?: string;\n  showAvatarEdit?: boolean;\n  password:"\n    },\n    "timestamp": "2025-06-11T10:46:10+00:00"\n  }\n}',
-      mainPayloadField: 'description',
-      mainPayloadFieldType: 'array',
-      payloadFields: [
-  {
-    "type": "array",
-    "sourceType": "input",
-    "name": "attachments",
-    "source": "1"
-  }
-],
-      payload: (formData: Record<string, any>) => {
-        const payload: Record<string, any> = {};
-        payload['description'] = '';
-        payload['attachments'] = formData['1'];
-        return payload;
-      }
-    }
-  }
-,
-  {
-    id: '6613',
-    label: 'gemini',
-    value: 'gemini',
+    id: '3433',
+    label: 'pexel image 22',
+    value: 'pexel image 22',
     fields: [],
     api: {
-      endpoint: 'https://dev.felidae.network/api/gemini/text_generation',
+      endpoint: 'https://dev.felidae.network/api/pexels/videos/search',
+      method: 'GET',
       payloadType: 'json',
-      responsePath: 'generated_text',
-      responseExample: '{\n  "generated_text": "Sir Gideon, the last of the Gryphon Knights, squinted at the plume of smoke rising from Oakhaven. His armor, once gleaming silver, was now dull with the dust of a hundred leagues. He\'d been chasing the beast for weeks, ever since it descended upon the valley, scorching fields and demanding tribute.  His horse, Valiant, snorted nervously, sensing the menace ahead.\n\nOakhaven was a charnel house. Homes were reduced to smoldering timbers.  A single terrified villager cowered behind a well, pointing a trembling finger towards a jagged peak overlooking the village.  Perched atop it, a magnificent yet terrible creature basked in the afternoon sun. Its scales shimmered like a thousand emeralds, and smoke curled from its nostrils.  The dragon.\n\nFear coiled in Gideon\'s gut, but duty quelled it. He dismounted, the clang of his armor ringing in the unnatural silence.  \"Where are the others?\" he asked the villager, his voice rough.\n\n\"Taken!\" the man croaked. \"Into the cave! The dragon... it takes the strongest... as... as sacrifices!\"\n\nGideon\'s jaw tightened. He knew what he had to do.  He drew his sword, Dawnbringer, its blade whispering with ancient magic. \"Show me the cave,\" he commanded.\n\nThe cave mouth gaped like a maw, reeking of sulphur and fear. Gideon, ignoring the tremors that shook the ground, strode in. The air grew hot and thick. The dragon\'s hoard, a glittering mountain of gold and jewels, lay scattered across the cave floor.  And chained to the far wall, he saw them – the villagers, their faces pale with terror.\n\nThe dragon uncoiled itself, its eyes burning like embers.  \"Another morsel?\" it boomed, its voice a rumble of thunder. \"You knights are so predictable.  Bravery is such a tedious appetizer.\"\n\n\"They are not your food!\" Gideon roared, his voice echoing in the cavern.  He charged, Dawnbringer flashing.\n\nThe dragon lunged, its claws raking the air. Gideon rolled beneath the attack, feeling the heat of its breath scorch his back.  He slashed at the dragon\'s flank, drawing a hiss of pain and a spray of emerald blood.  Enraged, the dragon unleashed a torrent of flame, but Gideon, anticipating the attack, had already taken cover behind a fallen stalactite.\n\nThe battle raged.  Gideon, smaller and quicker, dodged and weaved, landing blow after blow. The dragon, though powerful, was hampered by the confines of the cave.  Finally, seeing an opening, Gideon darted forward and plunged Dawnbringer deep into the dragon\'s underbelly.\n\nA roar of agony echoed through the cave as the dragon thrashed, its movements growing weaker. With a final shudder, it collapsed, its emerald scales dulling as life ebbed away.\n\nSilence descended upon the cave, broken only by the whimpers of the freed villagers.  Gideon, leaning heavily on Dawnbringer, watched as they rushed to embrace their families.  He had saved them.  He had slain the dragon.  He was, after all, a Gryphon Knight.  And bravery, he thought, was sometimes its own reward.\n"\n}',
-      mainPayloadField: 'prompt',
+      responsePath: 'videos.video_files',
+      responseExample: '{\n  "url": "https://api-server.pexels.com/search/videos/dog/",\n  "videos": [\n    {\n      "id": 3191251,\n      "width": 4096,\n      "height": 2160,\n      "url": "https://www.pexels.com/video/boy-playing-with-his-dog-3191251/",\n      "type": null,\n      "image": "https://images.pexels.com/videos/3191251/free-video-3191251.jpg?auto=compress&cs=tinysrgb&fit=crop&h=630&w=1200",\n      "duration": 13,\n      "user": {\n        "id": 1583460,\n        "name": "Pressmaster",\n        "url": "https://www.pexels.com/@pressmaster"\n      },\n      "video_files": [\n        {\n          "id": 9292384,\n          "quality": "hd",\n          "file_type": "video/mp4",\n          "width": 1366,\n          "height": 720,\n          "link": "https://videos.pexels.com/video-files/3191251/3191251-hd_1366_720_25fps.mp4",\n          "fps": 25,\n          "size": 4092157\n        },',
+      mainPayloadField: 'query',
+      mainPayloadFieldType: 'string',
+      payloadFields: [
+        {
+          "type": "string",
+          "sourceType": "static",
+          "name": "orientation",
+          "source": "landscape"
+        },
+        {
+          "type": "string",
+          "sourceType": "static",
+          "name": "size",
+          "source": "medium"
+        },
+        {
+          "type": "string",
+          "sourceType": "static",
+          "name": "locale",
+          "source": "en-US"
+        },
+        {
+          "type": "string",
+          "sourceType": "static",
+          "name": "page",
+          "source": "1"
+        },
+        {
+          "type": "string",
+          "sourceType": "static",
+          "name": "per_page",
+          "source": "10"
+        }
+      ],
+      payload: (formData: Record<string, any>) => {
+        const payload: Record<string, any> = {};
+        payload['query'] = '';
+        payload['orientation'] = 'landscape';
+        payload['size'] = 'medium';
+        payload['locale'] = 'en-US';
+        payload['page'] = '1';
+        payload['per_page'] = '10';
+        return payload;
+      }
+    }
+  }
+,
+  {
+    id: '3748',
+    label: 'CodeGPT',
+    value: 'CodeGPT',
+    fields: [
+  {
+    "id": "1",
+    "label": "attachments",
+    "type": "file",
+    "required": true
+  }
+],
+
+    api: {
+      endpoint: 'https://dev.felidae.network/api/chatgpt/code_generation',
+      method: 'POST',
+      payloadType: 'multipart',
+      responsePath: 'data.data.code',
+      responseExample: '{\n  "message": "Code generation successful.",\n  "data": {\n    "status": true,\n    "data": {\n      "code": "```python\ndef factorial(n):\n    if n < 0:\n        raise ValueError(\"Factorial is not defined for negative numbers.\")\n    elif n == 0 or n == 1:\n        return 1\n    else:\n        result = 1\n        for i in range(2, n + 1):\n            result *= i\n        return result\n```"\n    },\n    "timestamp": "2025-06-14T12:16:12+00:00"\n  }\n}',
+      mainPayloadField: 'description',
       mainPayloadFieldType: 'string',
       payloadFields: [
   {
     "type": "string",
     "sourceType": "static",
-    "name": "model",
-    "source": "gemini-1.5-pro"
+    "name": " model",
+    "source": "gpt-4o-mini"
+  },
+  {
+    "type": "string",
+    "sourceType": "static",
+    "name": "temperature",
+    "source": "0.7"
   },
   {
     "type": "string",
@@ -298,40 +311,41 @@ export const typeConfigs: TypeConfig[] = [
   },
   {
     "type": "string",
-    "sourceType": "static",
-    "name": "temperature",
-    "source": "0.7"
+    "sourceType": "input",
+    "name": "attachments",
+    "source": "1"
   }
 ],
       payload: (formData: Record<string, any>) => {
         const payload: Record<string, any> = {};
-        payload['prompt'] = '';
-        payload['model'] = 'gemini-1.5-pro';
-        payload['max_tokens'] = '200';
+        payload['description'] = '';
+        payload[' model'] = 'gpt-4o-mini';
         payload['temperature'] = '0.7';
+        payload['max_tokens'] = '200';
+        payload['attachments'] = formData['1'];
         return payload;
       }
     }
   }
 ,
   {
-    id: '9096',
-    label: 'final code',
-    value: 'final code',
+    id: '3303',
+    label: 'GPTCode2',
+    value: 'GPTCode2',
     fields: [
   {
     "id": "1",
-    "label": "attachments",
+    "label": "attachment",
     "type": "file",
-    "required": true,
-    "multiple": true
+    "required": true
   }
 ],
     api: {
       endpoint: 'https://dev.felidae.network/api/chatgpt/code_generation',
+      method: 'POST',
       payloadType: 'multipart',
       responsePath: 'data.data.code',
-      responseExample: '{\n  "message": "Code generation successful.",\n  "data": {\n    "status": true,\n    "data": {\n      "code": "```python\ndef factorial(n: int) -> int:\n    if n < 0:\n        raise ValueError(\"Factorial is not defined for negative numbers.\")\n    if n == 0 or n == 1:\n        return 1\n    result = 1\n    for i in range(2, n + 1):\n        result *= i\n    return result\n```"\n    },\n    "timestamp": "2025-06-13T06:49:54+00:00"\n  }\n}',
+      responseExample: '{\n  "message": "Code generation successful.",\n  "data": {\n    "status": true,\n    "data": {\n      "code": "```python\ndef factorial(n):\n    if n < 0:\n        raise ValueError(\"Factorial is not defined for negative numbers.\")\n    elif n == 0 or n == 1:\n        return 1\n    else:\n        result = 1\n        for i in range(2, n + 1):\n            result *= i\n        return result\n```"\n    },\n    "timestamp": "2025-06-14T12:16:12+00:00"\n  }\n}',
       mainPayloadField: 'description',
       mainPayloadFieldType: 'string',
       payloadFields: [
@@ -342,13 +356,13 @@ export const typeConfigs: TypeConfig[] = [
     "source": "gpt-4o-mini"
   },
   {
-    "type": "int",
+    "type": "string",
     "sourceType": "static",
     "name": "temperature",
     "source": "0.7"
   },
   {
-    "type": "int",
+    "type": "string",
     "sourceType": "static",
     "name": "max_tokens",
     "source": "200"
@@ -373,95 +387,37 @@ export const typeConfigs: TypeConfig[] = [
   }
 ,
   {
-    id: '7303',
-    label: 'fresh code',
-    value: 'fresh code',
+    id: '8712',
+    label: 'chatCompletetion',
+    value: 'chatCompletetion',
     fields: [
   {
-    "id": "attachmentss",
-    "label": "1",
+    "id": "1",
+    "label": "knowledge_base",
     "type": "file",
-    "required": true,
-    "multiple": true
+    "required": true
+  },
+  {
+    "id": "2",
+    "label": "schema_tool",
+    "type": "file",
+    "required": true
   }
 ],
     api: {
-      endpoint: 'https://dev.felidae.network/api/gemini/code_generation',
+      endpoint: 'https://dev.felidae.network/api/chatgpt/chat_completion',
+      method: 'POST',
       payloadType: 'multipart',
-      responsePath: 'data.code',
-      responseExample: '{\n  "status": true,\n  "data": {\n    "code": "```html\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Simple HTML</title>\n</head>\n<body>\n    <div>\n        <h1>Hello, World!</h1>\n        <p>This is a simple HTML example.</p>\n    </div>\n</body>\n</html>\n```"\n  },\n  "timestamp": "2025-06-13T08:42:18+00:00"\n}',
-      mainPayloadField: 'prompt',
+      responsePath: 'data.choices.message.content',
+      responseExample: '{\n  "message": "Chat completion successful.",\n  "data": {\n    "id": "chatcmpl-BiKij1RwklL6cFbc1Nhj7mCCf3MGa",\n    "object": "chat.completion",\n    "created": 1749905781,\n    "model": "gpt-4-0613",\n    "systemFingerprint": null,\n    "choices": [\n      {\n        "index": 0,\n        "message": {\n          "role": "assistant",\n          "content": "Sure, I can help with that, but I need more information about the content you need. What are the topics? Are they blog posts, reports, academic articles, fictional stories, etc? Please provide as much detail as possible.",\n          "toolCalls": [],\n          "functionCall": null\n        },\n        "finishReason": "stop"\n      }\n    ],\n    "usage": {\n      "promptTokens": 16,\n      "completionTokens": 47,\n      "totalTokens": 63,\n      "promptTokensDetails": {\n        "audioTokens": 0,\n        "cachedTokens": 0',
+      mainPayloadField: 'messages',
       mainPayloadFieldType: 'string',
       payloadFields: [
   {
     "type": "string",
     "sourceType": "static",
     "name": "model",
-    "source": "gemini-1.5-pro"
-  },
-  {
-    "type": "int",
-    "sourceType": "static",
-    "name": "max_tokens",
-    "source": "200"
-  },
-  {
-    "type": "float",
-    "sourceType": "static",
-    "name": "temperature",
-    "source": "0.7"
-  },
-  {
-    "type": "array",
-    "sourceType": "input",
-    "name": "attachments",
-    "source": "1"
-  }
-],
-      payload: (formData: Record<string, any>) => {
-        const payload: Record<string, any> = {};
-        payload['prompt'] = '';
-        payload['model'] = 'gemini-1.5-pro';
-        payload['max_tokens'] = 200;
-        payload['temperature'] = 0.7;
-        payload['attachments'] = formData['1'];
-        return payload;
-      }
-    }
-  }
-,
-  {
-    id: '2145',
-    label: 'newest',
-    value: 'newest',
-    fields: [
-  {
-    "id": "1",
-    "label": "attachmentss",
-    "type": "file",
-    "required": true,
-    "multiple": true
-  }
-],
-    api: {
-      endpoint: 'https://dev.felidae.network/api/gemini/code_generation',
-      payloadType: 'multipart',
-      responsePath: 'data.code',
-      responseExample: '{\n  "status": true,\n  "data": {\n    "code": "```html\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Simple HTML</title>\n</head>\n<body>\n    <div>\n        <h1>Hello, World!</h1>\n        <p>This is a simple HTML example.</p>\n    </div>\n</body>\n</html>\n```"\n  },\n  "timestamp": "2025-06-13T08:42:18+00:00"\n}',
-      mainPayloadField: 'prompt',
-      mainPayloadFieldType: 'string',
-      payloadFields: [
-  {
-    "type": "string",
-    "sourceType": "static",
-    "name": " model",
-    "source": "gemini-1.5-pro"
-  },
-  {
-    "type": "string",
-    "sourceType": "static",
-    "name": "max_tokens",
-    "source": "200"
+    "source": "gpt-4"
   },
   {
     "type": "string",
@@ -470,19 +426,32 @@ export const typeConfigs: TypeConfig[] = [
     "source": "0.7"
   },
   {
+    "type": "string",
+    "sourceType": "static",
+    "name": "max_tokens",
+    "source": "200"
+  },
+  {
     "type": "array",
     "sourceType": "input",
-    "name": "attachments",
+    "name": "knowledge_base",
     "source": "1"
+  },
+  {
+    "type": "array",
+    "sourceType": "input",
+    "name": "schema_tool",
+    "source": "2"
   }
 ],
       payload: (formData: Record<string, any>) => {
         const payload: Record<string, any> = {};
-        payload['prompt'] = '';
-        payload[' model'] = 'gemini-1.5-pro';
-        payload['max_tokens'] = '200';
+        payload['messages'] = '';
+        payload['model'] = 'gpt-4';
         payload['temperature'] = '0.7';
-        payload['attachments'] = formData['1'];
+        payload['max_tokens'] = '200';
+        payload['knowledge_base'] = formData['1'];
+        payload['schema_tool'] = formData['2'];
         return payload;
       }
     }

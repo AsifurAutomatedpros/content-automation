@@ -2,18 +2,12 @@ import React, { useState } from 'react';
 import InputText from './inputtext';
 import Button from './button';
 import Dropdown from './dropdown';
-import { typeConfigs } from '@/types/inputfields/typesanditsinputfields';
+import { typeConfigs, TypeConfig, InputField } from '@/types/inputfields/typesanditsinputfields';
 
-type FieldType = 'text' | 'file' | 'number' | 'dropdown' | 'file-multiple';
+type FieldType = 'text' | 'file' | 'number';
 
-interface Field {
-  id: string;
-  label: string;
+interface Field extends Omit<InputField, 'type'> {
   type: FieldType;
-  required: boolean;
-  placeholder?: string;
-  accept?: string;
-  multiple?: boolean;
   options?: { label: string; value: string }[];
 }
 
@@ -21,12 +15,12 @@ interface PayloadField {
   name: string;
   type: 'string' | 'array' | 'int' | 'float' | 'boolean' | 'file';
   sourceType: 'input' | 'static';
-  source: string; // input field id or static value
+  source: string;
 }
 
 interface AddTypeFormProps {
   onClose: () => void;
-  onAddType: (newType: any) => void;
+  onAddType: (newType: TypeConfig) => void;
   setSelectedType: (type: string) => void;
   setShowAddType: (show: boolean) => void;
 }
@@ -35,6 +29,7 @@ const AddTypeForm: React.FC<AddTypeFormProps> = ({ onClose, onAddType, setSelect
   const [typeName, setTypeName] = useState('');
   const [typeValue, setTypeValue] = useState('');
   const [apiEndpoint, setApiEndpoint] = useState('');
+  const [apiMethod, setApiMethod] = useState<'GET' | 'POST' | 'PUT' | 'DELETE'>('POST');
   const [payloadType, setPayloadType] = useState('json');
   const [responsePath, setResponsePath] = useState('');
   const [responseExample, setResponseExample] = useState('');
@@ -75,17 +70,24 @@ const AddTypeForm: React.FC<AddTypeFormProps> = ({ onClose, onAddType, setSelect
     { label: 'Static Value', value: 'static', className: 'text-black' },
   ];
 
+  const apiMethodOptions = [
+    { label: 'GET', value: 'GET', className: 'text-black' },
+    { label: 'POST', value: 'POST', className: 'text-black' },
+    { label: 'PUT', value: 'PUT', className: 'text-black' },
+    { label: 'DELETE', value: 'DELETE', className: 'text-black' }
+  ];
+
   const addField = () => {
     if (!currentField.id || !currentField.label || !currentField.type) return;
 
     const newField: Field = {
       id: currentField.id,
       label: currentField.label,
-      type: currentField.type === 'file-multiple' ? 'file' : currentField.type,
+      type: currentField.type,
       required: currentField.required!,
       placeholder: currentField.placeholder,
       accept: currentField.accept,
-      multiple: currentField.type === 'file-multiple',
+      multiple: currentField.type === 'file' && currentField.multiple,
       options: currentField.options
     };
 
@@ -122,6 +124,10 @@ const AddTypeForm: React.FC<AddTypeFormProps> = ({ onClose, onAddType, setSelect
       setError('API Endpoint is required.');
       return;
     }
+    if (!apiMethod) {
+      setError('API Method is required.');
+      return;
+    }
     if (!payloadType) {
       setError('Payload Type is required.');
       return;
@@ -144,13 +150,14 @@ const AddTypeForm: React.FC<AddTypeFormProps> = ({ onClose, onAddType, setSelect
     }
 
     try {
-      const newType = {
+      const newType: TypeConfig = {
         id: typeId,
         label: typeName,
         value: typeValue,
         fields,
         api: {
           endpoint: apiEndpoint,
+          method: apiMethod,
           payloadType,
           responsePath,
           responseExample,
@@ -300,6 +307,15 @@ const AddTypeForm: React.FC<AddTypeFormProps> = ({ onClose, onAddType, setSelect
                   value={apiEndpoint}
                   onChange={setApiEndpoint}
                   placeholder="Enter API endpoint (e.g., /api/process/document)"
+                />
+              </div>
+              <div>
+                <label className="block mb-1 font-medium text-black">API Method</label>
+                <Dropdown
+                  options={apiMethodOptions}
+                  value={apiMethod}
+                  onChange={(value) => setApiMethod(value as 'GET' | 'POST' | 'PUT' | 'DELETE')}
+                  placeholder="Select API method"
                 />
               </div>
               <div>

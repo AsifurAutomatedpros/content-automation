@@ -2,8 +2,15 @@ import React, { useState } from 'react';
 import { typography } from '@/app/styles/typography';
 import Icon from './icon/Icon';
 
+interface ImageData {
+  url: string;
+  resolution?: string;
+  duration?: string;
+  tags?: string[];
+}
+
 interface OutputImageProps {
-  images: string[];
+  images: ImageData[];
   className?: string;
 }
 
@@ -11,7 +18,7 @@ const OutputImage: React.FC<OutputImageProps> = ({
   images,
   className = '',
 }) => {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<ImageData | null>(null);
 
   return (
     <div className={`w-full ${className}`}>
@@ -23,11 +30,23 @@ const OutputImage: React.FC<OutputImageProps> = ({
             onClick={() => setSelectedImage(image)}
           >
             <img
-              src={image}
+              src={image.url}
               alt={`Image ${index + 1}`}
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200" />
+            <div className="absolute bottom-0 left-0 right-0 p-2 bg-black bg-opacity-50 text-white text-sm">
+              {image.resolution && <div>Resolution: {image.resolution}</div>}
+              {image.tags && image.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {image.tags.map((tag, i) => (
+                    <span key={i} className="bg-white bg-opacity-20 px-2 py-0.5 rounded-full text-xs">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -46,10 +65,22 @@ const OutputImage: React.FC<OutputImageProps> = ({
               <Icon name="close" size={24} />
             </button>
             <img
-              src={selectedImage}
+              src={selectedImage.url}
               alt="Preview"
               className="w-full h-auto rounded-md"
             />
+            <div className="mt-4 text-white">
+              {selectedImage.resolution && <div>Resolution: {selectedImage.resolution}</div>}
+              {selectedImage.tags && selectedImage.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedImage.tags.map((tag, i) => (
+                    <span key={i} className="bg-white bg-opacity-20 px-3 py-1 rounded-full">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

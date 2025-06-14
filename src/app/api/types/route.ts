@@ -78,6 +78,7 @@ export async function POST(request: Request) {
     fields: ${fieldsString},
     api: {
       endpoint: '${newType.api.endpoint}',
+      method: '${newType.api.method}',
       payloadType: '${newType.api.payloadType}',
       responsePath: '${newType.api.responsePath}',
       responseExample: '${responseExampleEscaped}',

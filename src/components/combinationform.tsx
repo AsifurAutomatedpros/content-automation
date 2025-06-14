@@ -9,6 +9,7 @@ interface ProcessField {
   id: number;
   value: string;
   path: string;
+  responsePath?: string;
 }
 
 interface ProcessOption {
@@ -27,8 +28,8 @@ const CombinationForm: React.FC = () => {
   const [combinationName, setCombinationName] = useState('');
   const [combinationId, setCombinationId] = useState('');
   const [isActive, setIsActive] = useState(true);
-  const [processFields, setProcessFields] = useState<ProcessField[]>([{ id: 1, value: '', path: '' }]);
-  const [outputType, setOutputType] = useState('');
+  const [processFields, setProcessFields] = useState<ProcessField[]>([{ id: 1, value: '', path: '', responsePath: undefined }]);
+  const [outputType, setOutputType] = useState('text');
   const [processOptions, setProcessOptions] = useState<ProcessOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +59,7 @@ const CombinationForm: React.FC = () => {
 
   const addProcessField = () => {
     const newId = processFields.length + 1;
-    setProcessFields([...processFields, { id: newId, value: '', path: '' }]);
+    setProcessFields([...processFields, { id: newId, value: '', path: '', responsePath: undefined }]);
   };
 
   const removeProcessField = (id: number) => {
@@ -71,8 +72,9 @@ const CombinationForm: React.FC = () => {
     if (selectedProcess) {
       const pathParts = selectedProcess.path.split('/');
       const fileName = pathParts[pathParts.length - 1];
+      const responsePath = fileName.replace('.tsx', '') === '300f' ? 'data.choices[0].message.content' : undefined;
       setProcessFields(processFields.map(field =>
-        field.id === id ? { ...field, value: fileName.replace('.tsx', ''), path: fileName } : field
+        field.id === id ? { ...field, value: fileName.replace('.tsx', ''), path: fileName, responsePath } : field
       ));
     }
   };
@@ -86,15 +88,26 @@ const CombinationForm: React.FC = () => {
       if (!combinationName.trim()) throw new Error('Combination name is required');
       if (!outputType) throw new Error('Output type is required');
       if (processFields.some(field => !field.value)) throw new Error('All process fields must be selected');
+
       const result = await createCombinationPage({
         combinationName,
         combinationId,
         isActive,
-        processes: processFields.map(field => ({ id: field.id, path: field.path, name: field.value })),
-        outputType
+        processes: processFields.map(field => ({
+          id: field.id,
+          path: field.path,
+          name: field.value,
+          responsePath: field.responsePath
+        })),
+        outputType,
+        responsePath: outputType === 'image' || outputType === 'video' ? 'data.data.url' : undefined
       });
+
       if (!result.success) throw new Error(result.error || 'Failed to create combination');
       setSuccess('Combination created successfully!');
+      setCombinationName('');
+      setProcessFields([{ id: 1, value: '', path: '', responsePath: undefined }]);
+      setOutputType('text');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

@@ -1,16 +1,13 @@
 "use client";
-import { processData as processsetuData } from '@/processes/setu';
-import { processData as processasdasdData } from '@/processes/asdasd';
-import { processData as processexactlyData } from '@/processes/exactly';
-import { processData as processnextjsonData } from '@/processes/nextjson';
-import { processData as processasifiiiiiiiiissssData } from '@/processes/asifiiiiiiiiissss';
 
-import { processData as processsurfacedData } from '@/processes/surfaced';
+
+
 import React, { useState } from "react";
 import { extractKeywords as extract3 } from "@/processes/3KeyWordExtractor";
 import { extractKeywords as extract4 } from "@/processes/4KeyWordsExtractor";
 import { metaTagSearch } from "@/processes/MetaTagSearch";
-import { processData as keywordFinal } from "@/processes/keyword Final";
+
+import OutputImage from '@/components/outputimage';
 
 // Define the type for process handlers
 type ProcessHandler = (inputLines: string[]) => Promise<string[] | string>;
@@ -20,49 +17,39 @@ const processHandlers: Record<string, ProcessHandler> = {
   "3": extract3,
   "4": extract4,
   "meta": metaTagSearch,
-  "keyword-final": keywordFinal,
-  "166887": processsetuData,
-  "300712": processasdasdData,
-  "410476": processexactlyData,
-  "700367": processnextjsonData,
-  "180833": processasifiiiiiiiiissssData,
   
-  "948232": processsurfacedData,
+
+  
+ 
+};
+
+// Update the ProcessOption type
+type ProcessOption = {
+  label: string;
+  value: string;
+  processId: string;
+  processName: string;
+  outputType: 'text' | 'image' | 'video';
 };
 
 // Process options with their IDs and names
 const processOptions = [
-  { label: "3 Keyword Extractor", value: "3", processId: "3", processName: "3KeyWordExtractor" },
-  { label: "4 Keyword Extractor", value: "4", processId: "4", processName: "4KeyWordsExtractor" },
-  { label: "Meta Tag Search", value: "meta", processId: "meta", processName: "MetaTagSearch" },
-  { label: "Keyword Final", value: "keyword-final", processId: "keyword-final", processName: "keyword Final" },
-  { label: "44 Process", value: "44", processId: "44", processName: "44" },
-  { label: "sometimes", value: "819931", processId: "819931", processName: "sometimes" },
-  { label: "GptCode5", value: "gptcode5", processId: "gptcode5", processName: "GptCode5" },
-  { label: "New Pro Ultra", value: "new_pro_ultratsx", processId: "new_pro_ultratsx", processName: "new_pro_ultratsx" },
-  { label: "Gemini Story Generation", value: "gemini-story", processId: "gemini-story", processName: "gemini_story_generation" },
-  { label: "Gemini Story Generation 2", value: "gemini-story-2", processId: "gemini-story-2", processName: "gemini_story_generation2" },
-  { label: "Gemini Code 5", value: "gemini-code-5", processId: "gemini-code-5", processName: "gemini_code_5" },
-  { label: "Code 67", value: "code67", processId: "code67", processName: "code67" },
-  { label: "Newsetssstsx", value: "newsetssstsx", processId: "newsetssstsx", processName: "newsetssstsx" },
-  { label: "2324 Process", value: "2324", processId: "2324", processName: "2324" },
-  { label: "10001 Process", value: "10001", processId: "10001", processName: "10001" },
-  { label: "2222 Process", value: "2222", processId: "2222", processName: "2222" },
-  { label: "setu", value: "166887", processId: "166887", processName: "setu" },
-  { label: "asdasd", value: "300712", processId: "300712", processName: "asdasd" },
-  { label: "exactly", value: "410476", processId: "410476", processName: "exactly" },
-  { label: "nextjson", value: "700367", processId: "700367", processName: "nextjson" },
-  { label: "asifiiiiiiiiissss", value: "180833", processId: "180833", processName: "asifiiiiiiiiissss" },
-  { label: "surfaced", value: "948232", processId: "948232", processName: "surfaced" },
-  
+  { label: "3 Keyword Extractor", value: "3", processId: "3", processName: "3KeyWordExtractor", outputType: 'text' },
+  { label: "4 Keyword Extractor", value: "4", processId: "4", processName: "4KeyWordsExtractor", outputType: 'text' },
+  { label: "Meta Tag Search", value: "meta", processId: "meta", processName: "MetaTagSearch", outputType: 'text' },
+
+
 ];
 
 export default function ExamplePage() {
   const [input, setInput] = useState("");
   const [process, setProcess] = useState("3");
-  const [output, setOutput] = useState("");
+  const [output, setOutput] = useState<string | string[]>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const selectedProcess = processOptions.find(p => p.value === process);
+  const outputType = selectedProcess?.outputType || 'text';
 
   const isInputValid = () => {
     if (process === "3333") return true;
@@ -86,11 +73,50 @@ export default function ExamplePage() {
       }
 
       const result = await handler(input.split('\n'));
-      setOutput(typeof result === 'string' ? result : JSON.stringify(result));
+      setOutput(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const renderOutput = () => {
+    if (!output) return null;
+
+    switch (outputType) {
+      case 'image':
+        return (
+          <div className="mt-6">
+            <label className="block text-sm font-medium mb-2">Output</label>
+            <OutputImage 
+              images={Array.isArray(output) ? output.map(url => ({ url })) : [{ url: output }]} 
+              className="w-full"
+            />
+          </div>
+        );
+      case 'video':
+        return (
+          <div className="mt-6">
+            <label className="block text-sm font-medium mb-2">Output</label>
+            <video 
+              src={Array.isArray(output) ? output[0] : output} 
+              controls 
+              className="w-full rounded-lg"
+            />
+          </div>
+        );
+      default:
+        return (
+          <div className="mt-6">
+            <label className="block text-sm font-medium mb-2">Output</label>
+            <textarea
+              value={Array.isArray(output) ? output.join('\n') : output}
+              readOnly
+              className="w-full h-64 p-3 border rounded-lg bg-black text-white"
+            />
+          </div>
+        );
     }
   };
 
@@ -127,14 +153,7 @@ export default function ExamplePage() {
         {loading ? "Processing..." : "Submit"}
       </button>
       {error && <div className="mt-4 text-red-600">{error}</div>}
-      <div className="mt-6">
-        <label className="block text-sm font-medium mb-2">Output</label>
-        <textarea
-          value={output}
-          readOnly
-          className="w-full h-64 p-3 border rounded-lg bg-black text-white"
-        />
-      </div>
+      {renderOutput()}
     </div>
   );
 }
