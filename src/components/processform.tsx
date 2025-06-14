@@ -200,30 +200,21 @@ const ProcessForm: React.FC = () => {
         payload[field.name] = value;
       });
 
-      // Add process meta fields
-      payload.processName = processName;
-      payload.processId = processId;
-      payload.status = status;
-      payload.instruction = instruction;
-      payload.validation = validation;
-      payload.gptValidation = gptValidation;
-      payload.outputStyle = outputStyle;
-      payload.type = selectedType;
-
       // Build the prompt for the process file
-      let prompt = `${gptValidation}\n\nFollow these instructions strictly:`;
-      prompt += `\nValidation: ${validation}`;
-      
-      // Do not add file contents to prompt
-      // for (const attachment of attachments) {
-      //   prompt += `\n\n${attachment.name}:\n${attachment.content}`;
-      // }
-      
-      
+      let prompt = `\n\nFollow these instructions strictly:${gptValidation}`;
+      prompt += `\nValidation: ${validation}\n\nMain Input:\n`;
 
       // Generate the process file content
       const processFileContent = generateProcessFile(selectedTypeConfig, {
         ...payload,
+        processName,
+        processId,
+        type: selectedType,
+        status,
+        instruction,
+        validation,
+        gptValidation,
+        outputStyle,
         // Add file paths for each file field
         ...Object.fromEntries(
           selectedTypeConfig.fields
@@ -239,22 +230,49 @@ const ProcessForm: React.FC = () => {
         )
       }, prompt);
 
-      // Sanitize process name for filename
-      const sanitizedProcessName = processName.replace(/[^a-zA-Z0-9_]/g, '_');
-      const filename = `${sanitizedProcessName}.tsx`;
+      // Create FormData for process creation
+      const formData = new FormData();
+      formData.append('processName', processName);
+      formData.append('processId', processId);
+      formData.append('status', String(status));
+      formData.append('instruction', instruction);
+      formData.append('validation', validation);
+      formData.append('gptValidation', gptValidation);
+      formData.append('outputStyle', outputStyle);
+      formData.append('processFileContent', processFileContent);
+      formData.append('type', selectedType);
+
+      // Add knowledge base and schema tool files if they exist
+      if (dynamicFields.knowledgeBase) {
+        const knowledgeBaseFiles = Array.isArray(dynamicFields.knowledgeBase) 
+          ? dynamicFields.knowledgeBase 
+          : [dynamicFields.knowledgeBase];
+        knowledgeBaseFiles.forEach(file => formData.append('knowledgeBase', file));
+      }
+
+      if (dynamicFields.schemaTool) {
+        const schemaToolFiles = Array.isArray(dynamicFields.schemaTool) 
+          ? dynamicFields.schemaTool 
+          : [dynamicFields.schemaTool];
+        schemaToolFiles.forEach(file => formData.append('schemaTool', file));
+      }
 
       // Save the process file using the API
-      const response = await fetch('/api/process-file', {
+      const response = await fetch('/api/process/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename, content: processFileContent }),
+        body: formData
       });
 
       if (!response.ok) {
         throw new Error('Failed to create process file.');
       }
 
-      setSuccess('Process file created successfully!');
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create process');
+      }
+
+      setSuccess('Process created and integrated successfully!');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create process file.');
     } finally {

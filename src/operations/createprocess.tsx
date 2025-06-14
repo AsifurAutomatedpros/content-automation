@@ -44,15 +44,8 @@ export const createProcess = async ({ endpoint, payload, headers, payloadType, t
   processName: string;
 }) => {
   try {
-    // Build the prompt
-    let prompt = `${gptValidation}\n\nFollow these instructions strictly:`;
-    prompt += `\nValidation: ${validation}`;
-    
-    // Add file field contents to the prompt and prepare attachments
-   
-
-    // Set main payload field to prompt
-    payload[typeConfig.api.mainPayloadField] = prompt;
+    // Set main payload field to userInput
+    payload[typeConfig.api.mainPayloadField] = userInput;
 
     // Handle attachments based on typeConfig payloadFields
     for (const field of typeConfig.api.payloadFields) {
@@ -116,16 +109,41 @@ export const createProcess = async ({ endpoint, payload, headers, payloadType, t
       throw new Error(result.error);
     }
 
+    // Sanitize process name for filename
+    const sanitizedProcessName = processName.replace(/[^a-zA-Z0-9_]/g, '_');
+    // Remove .tsx extension from filename
+    const processFileName = sanitizedProcessName;
+
+    // Build the prompt for the process file
+    const prompt = `\n\nFollow these instructions strictly:${gptValidation}\nValidation: ${validation}\n`;
+
     // Write the process file to /processes via API
-    const processFileContent = generateProcessFile(typeConfig, dynamicFields, prompt);
+    const processFileContent = generateProcessFile(typeConfig, {
+      ...dynamicFields,
+      processId,
+      processName,
+      type: typeConfig.id,
+      status: true,
+      instruction: '',
+      validation,
+      gptValidation,
+      outputStyle: 'text'
+    }, prompt);
+
     await fetch('/api/process-file', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        filename: processName, 
+        filename: processFileName,
         content: processFileContent,
         processId: processId,
-        // Include attachments in the process file creation
+        processName: processName,
+        type: typeConfig.id,
+        status: true,
+        instruction: '',
+        validation,
+        gptValidation,
+        outputStyle: 'text'
       }),
     });
 

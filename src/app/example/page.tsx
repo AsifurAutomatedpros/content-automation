@@ -1,14 +1,34 @@
 "use client";
+import { processData as processsetuData } from '@/processes/setu';
+import { processData as processasdasdData } from '@/processes/asdasd';
+import { processData as processexactlyData } from '@/processes/exactly';
+import { processData as processnextjsonData } from '@/processes/nextjson';
+import { processData as processasifiiiiiiiiissssData } from '@/processes/asifiiiiiiiiissss';
+
+import { processData as processsurfacedData } from '@/processes/surfaced';
 import React, { useState } from "react";
 import { extractKeywords as extract3 } from "@/processes/3KeyWordExtractor";
 import { extractKeywords as extract4 } from "@/processes/4KeyWordsExtractor";
 import { metaTagSearch } from "@/processes/MetaTagSearch";
 import { processData as keywordFinal } from "@/processes/keyword Final";
-import { Process as GptCode5Process, processData as gptCode5ProcessData } from '@/processes/GptCode5tsx';
-import { Process as NewProUltraProcess, processData as newProUltraProcessData } from '@/processes/new_pro_ultratsx';
-import { processData as geminiStory2ProcessData } from '@/processes/gemini_story_generation2tsx';
-import { Process as Process2222, processData as process2222Data } from '@/processes/2222tsx';
 
+// Define the type for process handlers
+type ProcessHandler = (inputLines: string[]) => Promise<string[] | string>;
+
+// Process handlers map for easy integration
+const processHandlers: Record<string, ProcessHandler> = {
+  "3": extract3,
+  "4": extract4,
+  "meta": metaTagSearch,
+  "keyword-final": keywordFinal,
+  "166887": processsetuData,
+  "300712": processasdasdData,
+  "410476": processexactlyData,
+  "700367": processnextjsonData,
+  "180833": processasifiiiiiiiiissssData,
+  
+  "948232": processsurfacedData,
+};
 
 // Process options with their IDs and names
 const processOptions = [
@@ -28,6 +48,13 @@ const processOptions = [
   { label: "2324 Process", value: "2324", processId: "2324", processName: "2324" },
   { label: "10001 Process", value: "10001", processId: "10001", processName: "10001" },
   { label: "2222 Process", value: "2222", processId: "2222", processName: "2222" },
+  { label: "setu", value: "166887", processId: "166887", processName: "setu" },
+  { label: "asdasd", value: "300712", processId: "300712", processName: "asdasd" },
+  { label: "exactly", value: "410476", processId: "410476", processName: "exactly" },
+  { label: "nextjson", value: "700367", processId: "700367", processName: "nextjson" },
+  { label: "asifiiiiiiiiissss", value: "180833", processId: "180833", processName: "asifiiiiiiiiissss" },
+  { label: "surfaced", value: "948232", processId: "948232", processName: "surfaced" },
+  
 ];
 
 export default function ExamplePage() {
@@ -47,39 +74,19 @@ export default function ExamplePage() {
     setError(null);
     setOutput("");
     try {
-      let result: string[] | string = [];
       const selectedProcess = processOptions.find(p => p.value === process);
       
       if (!selectedProcess) {
         throw new Error("Invalid process selected");
       }
 
-      if (process === "3") {
-        result = await extract3(input.split('\n'));
-        setOutput((result as string[]).join("\n"));
-      } else if (process === "4") {
-        result = await extract4(input.split('\n'));
-        setOutput((result as string[]).join("\n"));
-      } else if (process === "meta") {
-        const inputLines = input.split("\n").map(line => line.trim()).filter(line => line.length > 0);
-        result = await metaTagSearch(inputLines);
-        setOutput(result as string);
-      } else if (process === "keyword-final") {
-        result = await keywordFinal(input.split('\n'));
-        setOutput((result as string[]).join("\n"));
-      } else if (process === "gptcode5") {
-        result = await gptCode5ProcessData(input.split('\n'));
-        setOutput(typeof result === 'string' ? result : JSON.stringify(result));
-      } else if (process === "new_pro_ultratsx") {
-        result = await newProUltraProcessData(input.split('\n'));
-        setOutput(typeof result === 'string' ? result : JSON.stringify(result));
-      } else if (process === "gemini-story-2") {
-        result = await geminiStory2ProcessData(input.split('\n'));
-        setOutput(result as string);
-      } else if (process === "2222") {
-        result = await process2222Data(input.split('\n'));
-        setOutput(result as string);
+      const handler = processHandlers[process];
+      if (!handler) {
+        throw new Error("Process handler not found");
       }
+
+      const result = await handler(input.split('\n'));
+      setOutput(typeof result === 'string' ? result : JSON.stringify(result));
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
